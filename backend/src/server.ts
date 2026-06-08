@@ -10,6 +10,7 @@ import {
   payGatewayInitialize
 } from "./services/PaymentGatewayServices/PaymentGatewayServices";
 import { i18nReady } from "./services/TranslationServices/i18nService";
+import BulkMessageService from "./services/BulkMessageService";
 
 // Environment Variable Validation
 if (!process.env.PORT) {
@@ -44,6 +45,9 @@ async function startServer() {
     }
 
     checkOpenInvoices();
+    
+    // Resume any running bulk campaigns
+    BulkMessageService.resumeAllCampaigns();
   } catch (error) {
     logger.error(`Error during server startup: ${error.message}`);
     process.exit(1);

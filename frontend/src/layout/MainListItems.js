@@ -33,6 +33,7 @@ import AnnouncementIcon from "@material-ui/icons/Announcement";
 import ForumIcon from "@material-ui/icons/Forum";
 import LocalAtmIcon from '@material-ui/icons/LocalAtm';
 import RotateRight from "@material-ui/icons/RotateRight";
+import SendIcon from "@material-ui/icons/Send";
 import { i18n } from "../translate/i18n";
 import BorderColorIcon from '@material-ui/icons/BorderColor';
 import { WhatsAppsContext } from "../context/WhatsApp/WhatsAppsContext";
@@ -309,6 +310,16 @@ const MainListItems = (props) => {
                   <ForumIcon />
                 </Badge>
               }
+            />
+            <ListItemLink
+              to="/whatsapp-chats"
+              primary="WhatsApp Chats"
+              icon={<WhatsAppIcon />}
+            />
+            <ListItemLink
+              to="/bulk-messaging"
+              primary="Bulk Messaging"
+              icon={<SendIcon />}
             />
             <ListItemLink
               to="/helps"

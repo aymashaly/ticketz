@@ -65,6 +65,51 @@ export const index = async (req: Request, res: Response): Promise<Response> => {
   return res.json({ contacts, count, hasMore });
 };
 
+export const count = async (req: Request, res: Response): Promise<Response> => {
+  const { companyId } = req.user;
+  const { tags } = req.query;
+
+  try {
+    let contactCount = 0;
+
+    logger.info({ companyId, tags }, "Contact count request received");
+
+    if (tags) {
+      // Count contacts with specific tags using raw SQL
+      const tagIds = tags.toString().split(',').map(id => parseInt(id));
+      logger.info({ tagIds }, "Counting contacts for tags");
+      
+      const { QueryTypes } = require("sequelize");
+      const sequelize = require("../database/index").default;
+      
+      const result = await sequelize.query(`
+        SELECT COUNT(DISTINCT c.id) as count
+        FROM "Contacts" c
+        INNER JOIN "ContactTags" ct ON c.id = ct."contactId"
+        WHERE c."companyId" = $1 
+        AND ct."tagId" = ANY($2)
+      `, {
+        bind: [companyId, tagIds],
+        type: QueryTypes.SELECT
+      });
+      
+      contactCount = parseInt(result[0]?.count || 0);
+      logger.info({ contactCount, tagIds }, "Contact count result for tags");
+    } else {
+      // Count all contacts
+      contactCount = await Contact.count({
+        where: { companyId }
+      });
+      logger.info({ contactCount, companyId }, "Total contact count result");
+    }
+
+    return res.json({ count: contactCount });
+  } catch (error) {
+    logger.error({ message: error?.message, stack: error?.stack }, "Error counting contacts");
+    return res.json({ count: 0 });
+  }
+};
+
 export const findOrInsertContact = async (
   req: Request,
   res: Response

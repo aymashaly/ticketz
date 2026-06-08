@@ -30,8 +30,10 @@ import CampaignsConfig from "../pages/CampaignsConfig";
 import CampaignReport from "../pages/CampaignReport";
 import Annoucements from "../pages/Annoucements";
 import Chat from "../pages/Chat";
+import WhatsAppChats from "../pages/WhatsAppChats";
 import ToDoList from "../pages/ToDoList/";
 import Subscription from "../pages/Subscription/";
+import BulkMessaging from "../pages/BulkMessaging/";
 
 const Routes = () => {
   const [showCampaigns, setShowCampaigns] = useState(false);
@@ -119,8 +121,15 @@ const Routes = () => {
                   component={Subscription}
                   isPrivate
                 />
+                <Route
+                  exact
+                  path="/bulk-messaging"
+                  component={BulkMessaging}
+                  isPrivate
+                />
                 
                 <Route exact path="/chats/:id?" component={Chat} isPrivate />
+                <Route exact path="/whatsapp-chats" component={WhatsAppChats} isPrivate />
                 {showCampaigns && (
                   <>
                     <Route

@@ -35,6 +35,8 @@ contactRoutes.get(
 
 contactRoutes.get("/contacts", apiTokenAuth, isAuth, ContactController.index);
 
+contactRoutes.get("/contacts/count", apiTokenAuth, isAuth, ContactController.count);
+
 contactRoutes.get(
   "/contacts/list",
   apiTokenAuth,

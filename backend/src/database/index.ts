@@ -41,6 +41,8 @@ import UserSocketSession from "../models/UserSocketSession";
 import OutOfTicketMessage from "../models/OutOfTicketMessages";
 import Translation from "../models/Translation";
 import Wavoip from "../models/Wavoip";
+import BulkCampaign from "../models/BulkCampaign";
+import BulkMessage from "../models/BulkMessage";
 
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const dbConfig = require("../config/database");
@@ -89,7 +91,9 @@ const models = [
   OutOfTicketMessage,
   Subscriptions,
   Translation,
-  Wavoip
+  Wavoip,
+  BulkCampaign,
+  BulkMessage
 ];
 
 sequelize.addModels(models);
