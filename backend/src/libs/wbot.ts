@@ -14,14 +14,10 @@ import makeWASocket, {
 import { Boom } from "@hapi/boom";
 // import MAIN_LOGGER from "@whiskeysockets/baileys/lib/Utils/logger";
 import NodeCache from "node-cache";
+import { format } from "date-fns";
 import { Op } from "sequelize";
 import { Agent } from "https";
 import { Mutex } from "async-mutex";
-import useVoiceCallsZapitu from "voice-calls-zapitu";
-import {
-  ClientToServerEvents,
-  ServerToClientEvents
-} from "voice-calls-zapitu/lib/services/transport.type";
 import { Socket } from "socket.io-client";
 import Whatsapp from "../models/Whatsapp";
 import { logger, loggerBaileys } from "../utils/logger";
@@ -43,6 +39,7 @@ import ShowTicketService from "../services/TicketServices/ShowTicketService";
 import GetTicketWbot from "../helpers/GetTicketWbot";
 import { getJidOf } from "../services/WbotServices/getJidOf";
 import WhatsappLidMap from "../models/WhatsappLidMap";
+import { reach } from "yup";
 
 // const loggerBaileys = MAIN_LOGGER.child({});
 // loggerBaileys.level = process.env.BAILEYS_LOG_LEVEL || "error";
@@ -156,6 +153,31 @@ export const initWASocket = async (
         if (!whatsappUpdate) return;
 
         const { id, name, provider } = whatsappUpdate;
+
+        function handleReachoutTimelock(
+          timelock: {
+            isActive?: boolean;
+            timeEnforcementEnds?: Date;
+            enforcementType?: string;
+          },
+          logData: Record<string, unknown>
+        ): void {
+          if (!timelock?.isActive) {
+            return;
+          }
+
+          const message = `Session ${name} is temporarily restricted up to ${
+            timelock.timeEnforcementEnds
+              ? format(timelock.timeEnforcementEnds, "dd/MM/yyyy HH:mm:ss")
+              : "unknown"
+          } - ${timelock.enforcementType}.`;
+
+          logger.warn(logData, message);
+          io.to(`company-${whatsapp.companyId}-admin`)
+            .to("role-connections")
+            .to(`role-connections/${whatsapp.id}`)
+            .emit(`error`, { message });
+        }
 
         const autoVersion = await waVersionMutex.runExclusive(async () => {
           let wv = waVersionCache.get("waVersion");
@@ -330,7 +352,11 @@ export const initWASocket = async (
 
         wsocket.ev.on(
           "connection.update",
-          async ({ connection, lastDisconnect, qr }) => {
+          async ({ connection, lastDisconnect, qr, reachoutTimeLock }) => {
+            if (reachoutTimeLock) {
+              handleReachoutTimelock(reachoutTimeLock, { reachoutTimeLock });
+            }
+
             logger.info(
               { lastDisconnect },
               `Socket  ${name} Connection Update ${connection || ""}`
@@ -398,38 +424,17 @@ export const initWASocket = async (
             }
 
             if (connection === "open") {
+              wsocket.fetchAccountReachoutTimelock().then(timelock => {
+                handleReachoutTimelock(timelock, { timelock });
+              });
+
+              wsocket.fetchNewChatMessageCap().then(cap => {
+                logger.debug({ cap }, "Fetched new chat message cap");
+              });
+
               await whatsapp.reload({
                 include: ["wavoip"]
               });
-              if (whatsapp.wavoip) {
-                useVoiceCallsZapitu(
-                  whatsapp.wavoip.token,
-                  wsocket,
-                  "open",
-                  true
-                )
-                  .then(
-                    (
-                      wavoipSocket: Socket<
-                        ServerToClientEvents,
-                        ClientToServerEvents
-                      >
-                    ) => {
-                      wavoipSocket.onAny((event, ...args) => {
-                        logger.trace(
-                          { event, args },
-                          `Wavoip event received: ${event}`
-                        );
-                      });
-                    }
-                  )
-                  .catch(error => {
-                    logger.error(
-                      { message: error.message },
-                      `Error initializing Wavoip for session ${name}`
-                    );
-                  });
-              }
 
               wsocket.myLid = jidNormalizedUser(wsocket.user?.lid);
               wsocket.myJid = jidNormalizedUser(wsocket.user.id);

@@ -13,6 +13,7 @@ import AppError from "./errors/AppError";
 import routes from "./routes";
 import { logger } from "./utils/logger";
 import { messageQueue, sendScheduledMessages } from "./queues";
+import { corsOrigin } from "./helpers/corsOrigin";
 
 class SystemError extends Error {
   code?: string;
@@ -30,8 +31,14 @@ app.set("queues", {
 app.use(
   cors({
     credentials: true,
-    origin: process.env.FRONTEND_URL,
-    exposedHeaders: ["Content-Range", "X-Content-Range", "Date"]
+    origin: corsOrigin,
+    exposedHeaders: [
+      "Content-Range",
+      "X-Content-Range",
+      "Date",
+      "Accept-Ranges",
+      "Content-Length"
+    ]
   })
 );
 app.use(cookieParser());
@@ -42,6 +49,26 @@ app.get("/public/*", (req, res) => {
 
   if (filePath.endsWith(".aac")) {
     res.setHeader("Content-Type", "audio/aac");
+  }
+
+  // ?inline=1 → serve with Content-Disposition: inline so browsers display
+  // the file in-place (e.g. PDF viewer iframe) instead of downloading it.
+  if (req.query.inline === "1") {
+    res.setHeader("Content-Disposition", "inline");
+    return res.sendFile(filePath, err => {
+      if (err) {
+        const sysErr = err as SystemError;
+        if (sysErr.code === "ENOENT") {
+          res.status(404).end();
+        } else {
+          logger.debug(
+            { err },
+            `Error serving inline file ${req.params[0]}: ${sysErr.message}`
+          );
+          res.status(500).end();
+        }
+      }
+    });
   }
 
   res.download(filePath, (err: SystemError) => {

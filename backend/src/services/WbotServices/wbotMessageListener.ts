@@ -1,4 +1,5 @@
 import path from "path";
+import fs from "fs";
 import * as Sentry from "@sentry/node";
 import { isNil, head, keys } from "lodash";
 
@@ -14,7 +15,9 @@ import {
   WAMessageUpdate,
   WAMessageStubType,
   WAGenericMediaMessage,
-  WALocationMessage
+  WALocationMessage,
+  WAMessageStatus,
+  WAMessageKey
 } from "libzapitu-rf";
 import { Mutex } from "async-mutex";
 import { Op } from "sequelize";
@@ -24,7 +27,7 @@ import { Throttle } from "stream-throttle";
 import { Sequelize } from "sequelize-typescript";
 import Contact from "../../models/Contact";
 import Ticket from "../../models/Ticket";
-import Message from "../../models/Message";
+import Message, { MessageErrorPayload } from "../../models/Message";
 import OldMessage from "../../models/OldMessage";
 
 import { getIO } from "../../libs/socket";
@@ -65,10 +68,12 @@ import { parseToMilliseconds } from "../../helpers/parseToMilliseconds";
 import { randomValue } from "../../helpers/randomValue";
 import { getJidOf } from "./getJidOf";
 import { verifyContact } from "./verifyContact";
+import { decryptMessageEdit } from "./decryptMessageEdit";
 import GetTicketWbot from "../../helpers/GetTicketWbot";
 import saveMediaToFile from "../../helpers/saveMediaFile";
 import { _t } from "../TranslationServices/i18nService";
 import WhatsappLidMap from "../../models/WhatsappLidMap";
+import normalizePhone from "../../helpers/NormalizePhone";
 
 export interface ImessageUpsert {
   messages: proto.IWebMessageInfo[];
@@ -302,17 +307,24 @@ const getSenderMessage = (
 
 const getContactMessage = async (msg: WAMessage, wbot: Session) => {
   const isGroup = msg.key.remoteJid.includes("g.us");
-  const rawNumber = msg.key.remoteJid.replace(/\D/g, "");
+  const mainJid = isGroup
+    ? msg.key.remoteJid
+    : msg.key?.sender_pn || msg.key?.peer_recipient_pn || msg.key.remoteJid;
+  const numberJid = msg.key?.sender_pn || msg.key?.peer_recipient_pn;
+  const rawNumber = mainJid.replace(/\D/g, "");
   return isGroup
     ? {
         id: getSenderMessage(msg, wbot),
         name: msg.pushName
       }
     : {
-        id: msg.key.remoteJid,
-        lid: msg?.key?.sender_lid,
-        jid: msg?.key?.sender_pn,
-        name: msg.key.fromMe ? rawNumber : msg.pushName
+        id: mainJid,
+        lid:
+          msg.key?.sender_lid ||
+          msg.key?.peer_recipient_lid ||
+          (msg.key?.peer_recipient_pn ? msg.key.remoteJid : undefined),
+        jid: numberJid,
+        name: msg.key.fromMe ? rawNumber : msg.pushName || msg.verifiedBizName
       };
 };
 
@@ -573,13 +585,15 @@ const storeQuotedMessage = async (
   let mediaUrl = null;
   if (media) {
     // eslint-disable-next-line no-use-before-define
-    mediaUrl = await saveMediaToFile(media, ticket);
+    mediaUrl = await saveMediaToFile(media, { destination: ticket });
   }
 
   let thumbnailUrl = null;
   if (thumbnailMedia) {
     // eslint-disable-next-line no-use-before-define
-    thumbnailUrl = await saveMediaToFile(thumbnailMedia, ticket);
+    thumbnailUrl = await saveMediaToFile(thumbnailMedia, {
+      destination: ticket
+    });
   }
 
   const mediaType = media?.mimetype.split("/")[0];
@@ -696,12 +710,14 @@ export const verifyMediaMessage = async (
 
   let mediaUrl = mediaInfo?.mediaUrl || null;
   if (media) {
-    mediaUrl = await saveMediaToFile(media, ticket);
+    mediaUrl = await saveMediaToFile(media, { destination: ticket });
   }
 
   let thumbnailUrl = null;
   if (thumbnailMedia) {
-    thumbnailUrl = await saveMediaToFile(thumbnailMedia, ticket);
+    thumbnailUrl = await saveMediaToFile(thumbnailMedia, {
+      destination: ticket
+    });
   }
 
   const mimetype = mediaInfo?.mimetype || media?.mimetype || "";
@@ -883,8 +899,8 @@ export const verifyEditedMessage = async (
     msg.extendedTextMessage?.text ||
     msg.imageMessage?.caption ||
     msg.videoMessage?.caption ||
-    msg.documentMessage.caption ||
-    msg.documentWithCaptionMessage?.message.documentMessage.caption;
+    msg.documentMessage?.caption ||
+    msg.documentWithCaptionMessage?.message?.documentMessage?.caption;
 
   if (!editedText) return;
 
@@ -915,6 +931,58 @@ export const verifyEditedMessage = async (
 
   await ticket.update({
     lastMessage: messageData.body
+  });
+
+  await CreateMessageService({ messageData, companyId: ticket.companyId });
+
+  const io = getIO();
+
+  io.to(ticket.status)
+    .to(ticket.id.toString())
+    .emit(`company-${ticket.companyId}-ticket`, {
+      action: "update",
+      ticket,
+      ticketId: ticket.id
+    });
+};
+
+const markEditedMessageWithError = async (ticket: Ticket, msgId: string) => {
+  const editedMsg = await Message.findByPk(msgId);
+  if (!editedMsg) {
+    return;
+  }
+
+  const editErrorLabel = _t("Failed to process message edit", ticket);
+  const errorBody = editedMsg.body
+    ? `${editedMsg.body}\n[${editErrorLabel}]`
+    : `[${editErrorLabel}]`;
+
+  const messageData = {
+    id: editedMsg.id,
+    ticketId: editedMsg.ticketId,
+    contactId: editedMsg.contactId,
+    body: errorBody,
+    fromMe: editedMsg.fromMe,
+    mediaType: editedMsg.mediaType,
+    read: editedMsg.read,
+    quotedMsgId: editedMsg.quotedMsgId,
+    ack: editedMsg.ack,
+    remoteJid: editedMsg.remoteJid,
+    participant: editedMsg.participant,
+    dataJson: editedMsg.dataJson,
+    isEdited: true
+  };
+
+  const oldMessage = {
+    messageId: messageData.id,
+    body: editedMsg.body,
+    ticketId: editedMsg.ticketId
+  };
+
+  await OldMessage.upsert(oldMessage);
+
+  await ticket.update({
+    lastMessage: messageData.body.substring(0, 255).replace(/\n/g, " ")
   });
 
   await CreateMessageService({ messageData, companyId: ticket.companyId });
@@ -1000,6 +1068,7 @@ const isValidMsg = (msg: proto.IWebMessageInfo): boolean => {
     const ifType =
       msgType === "conversation" ||
       msgType === "editedMessage" ||
+      msgType === "secretEncryptedMessage" ||
       msgType === "extendedTextMessage" ||
       msgType === "audioMessage" ||
       msgType === "videoMessage" ||
@@ -1150,6 +1219,14 @@ export const startQueue = async (
 
   if (queue.mediaPath !== null && queue.mediaPath !== "") {
     filePath = path.resolve("public", queue.mediaPath);
+
+    // check if file not exists
+    if (!fs.existsSync(filePath)) {
+      filePath = null;
+    }
+  }
+
+  if (filePath) {
     optionsMsg = await getMessageFileOptions(queue.mediaName, filePath);
   }
 
@@ -1470,6 +1547,12 @@ const handleChartbot = async (
     let optionsMsg = null;
     if (currentOption.mediaPath !== null && currentOption.mediaPath !== "") {
       filePath = path.resolve("public", currentOption.mediaPath);
+      if (!fs.existsSync(filePath)) {
+        filePath = null;
+      }
+    }
+
+    if (filePath) {
       optionsMsg = await getMessageFileOptions(
         currentOption.mediaName,
         filePath
@@ -1562,7 +1645,8 @@ const handleMessage = async (
         !messageMedia &&
         msgType !== "conversation" &&
         msgType !== "extendedTextMessage" &&
-        msgType !== "vcard"
+        msgType !== "vcard" &&
+        msgType !== "protocolMessage"
       )
         return;
       msgContact = await getContactMessage(msg, wbot);
@@ -1785,6 +1869,58 @@ const handleMessage = async (
         ticket,
         msg.message.protocolMessage.key.id
       );
+    } else if (msg.message?.secretEncryptedMessage) {
+      // message edited using secret encrypted payload
+      const targetId = msg.message.secretEncryptedMessage.targetMessageKey?.id;
+
+      if (!targetId) {
+        logger.warn("[secretEnc] Message edit received without target id");
+      } else {
+        try {
+          const originalDbMessage = await Message.findByPk(targetId);
+
+          if (!originalDbMessage?.dataJson) {
+            await markEditedMessageWithError(ticket, targetId);
+          } else {
+            let originalMsg: proto.IWebMessageInfo | null = null;
+
+            try {
+              originalMsg = JSON.parse(originalDbMessage.dataJson);
+            } catch (error) {
+              logger.warn(
+                { error, targetId },
+                "[secretEnc] Failed to parse original message dataJson"
+              );
+              throw error;
+            }
+
+            if (!originalMsg) {
+              await markEditedMessageWithError(ticket, targetId);
+            } else {
+              const decryptedMessage = decryptMessageEdit(msg, originalMsg);
+
+              if (
+                decryptedMessage &&
+                decryptedMessage.protocolMessage?.editedMessage
+              ) {
+                await verifyEditedMessage(
+                  decryptedMessage.protocolMessage.editedMessage,
+                  ticket,
+                  targetId
+                );
+              } else {
+                await markEditedMessageWithError(ticket, targetId);
+              }
+            }
+          }
+        } catch (error) {
+          logger.error(
+            { error, targetId },
+            "[secretEnc] Failed to decrypt message edit"
+          );
+          await markEditedMessageWithError(ticket, targetId);
+        }
+      }
     } else if (msg.message?.protocolMessage?.type === 0) {
       await verifyDeleteMessage(msg.message.protocolMessage, ticket);
     } else {
@@ -1940,8 +2076,12 @@ const handleMessage = async (
   }
 };
 
-const handleMsgAck = async (id: string, whatsappId: number, ack: number) => {
-  if (!ack) return;
+const handleMsgAck = async (
+  id: string,
+  whatsappId: number,
+  update: { status?: number; messageStubParameters?: string[] }
+) => {
+  if (!update) return;
 
   const io = getIO();
 
@@ -1965,9 +2105,28 @@ const handleMsgAck = async (id: string, whatsappId: number, ack: number) => {
       ]
     });
 
-    if (!messageToUpdate || ack <= messageToUpdate.ack) return;
+    if (
+      !messageToUpdate ||
+      (update.status > 0 && update.status <= messageToUpdate.ack)
+    ) {
+      return;
+    }
 
-    await messageToUpdate.update({ ack });
+    let error: MessageErrorPayload;
+
+    if (update.status === WAMessageStatus.ERROR) {
+      logger.error({ id, whatsappId, update }, "Message failed to send.");
+
+      error = {
+        code: `ZAPITU-${update.status}`,
+        message: update.messageStubParameters?.[1]
+          ? update.messageStubParameters[1]
+          : "Message failed to send",
+        rawPayload: update
+      };
+    }
+
+    await messageToUpdate.update({ ack: error ? -1 : update.status, error });
     io.to(messageToUpdate.ticketId.toString()).emit(
       `company-${messageToUpdate.companyId}-appMessage`,
       {
@@ -1986,17 +2145,77 @@ const verifyRecentCampaign = async (
   companyId: number
 ) => {
   if (!message.key.fromMe) {
-    const number = message.key.remoteJid.replace(/\D/g, "");
+    const key = message.key as WAMessageKey;
+    const remoteJid = key.remoteJid || "";
+
+    if (remoteJid.endsWith("@g.us") || remoteJid === "status@broadcast") {
+      return false;
+    }
+
+    const candidates = new Set<string>();
+    const jids = [remoteJid, key.sender_pn].filter(Boolean) as string[];
+    const addPhoneCandidates = (digits: string) => {
+      if (!digits) {
+        return;
+      }
+
+      const normalized = normalizePhone(digits);
+      candidates.add(normalized.phone);
+
+      if (normalized.wphone !== normalized.phone) {
+        candidates.add(normalized.wphone);
+      }
+    };
+
+    jids.forEach(jid => {
+      const value = jid.trim();
+
+      if (!value) {
+        return;
+      }
+
+      if (value.endsWith("@lid")) {
+        candidates.add(value);
+        return;
+      }
+
+      if (value.endsWith("@s.whatsapp.net")) {
+        const numberWithCountry = value.replace(/@s\.whatsapp\.net$/, "");
+        const digits = numberWithCountry.replace(/\D/g, "");
+
+        addPhoneCandidates(digits);
+        return;
+      }
+
+      const digits = value.replace(/\D/g, "");
+
+      addPhoneCandidates(digits);
+    });
+
+    if (!candidates.size) {
+      return false;
+    }
+
     const campaigns = await Campaign.findAll({
       where: { companyId, status: "EM_ANDAMENTO", confirmation: true }
     });
-    if (campaigns) {
+    if (campaigns.length) {
       const ids = campaigns.map(c => c.id);
       const campaignShipping = await CampaignShipping.findOne({
-        where: { campaignId: { [Op.in]: ids }, number, confirmation: null }
+        where: {
+          campaignId: { [Op.in]: ids },
+          number: { [Op.in]: [...candidates] },
+          confirmationRequestedAt: {
+            [Op.ne]: null
+          }
+        },
+        order: [
+          ["createdAt", "DESC"],
+          ["id", "DESC"]
+        ]
       });
 
-      if (campaignShipping) {
+      if (campaignShipping && !campaignShipping.confirmation) {
         await campaignShipping.update({
           confirmedAt: moment(),
           confirmation: true
@@ -2078,7 +2297,7 @@ const wbotMessageListener = async (
       if (messageReceipt.length === 0) return;
       messageReceipt.forEach(async (receipt: any) => {
         await ackMutex.runExclusive(async () => {
-          handleMsgAck(receipt.key.id, wbot.id, 2);
+          handleMsgAck(receipt.key.id, wbot.id, { status: 2 });
         });
       });
     });
@@ -2090,7 +2309,7 @@ const wbotMessageListener = async (
         (wbot as WASocket)!.readMessages([message.key]);
 
         await ackMutex.runExclusive(async () => {
-          handleMsgAck(message.key.id, wbot.id, message.update.status);
+          handleMsgAck(message.key.id, wbot.id, message.update);
         });
       });
     });

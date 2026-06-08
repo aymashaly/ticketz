@@ -4,7 +4,6 @@ import Dialog from "@material-ui/core/Dialog";
 import DialogActions from "@material-ui/core/DialogActions";
 import DialogContent from "@material-ui/core/DialogContent";
 import DialogTitle from "@material-ui/core/DialogTitle";
-import Typography from "@material-ui/core/Typography";
 
 import { i18n } from "../../translate/i18n";
 import { FormControlLabel, Switch } from "@material-ui/core";
@@ -31,7 +30,15 @@ import { FormControlLabel, Switch } from "@material-ui/core";
  * />
  * */
 
-const ConfirmationModal = ({ title, children, open, onClose, onConfirm, rawChildren, okEnabled=true, checkbox }) => {
+const ConfirmationModal = ({
+  title,
+  children,
+  open,
+  onClose,
+  onConfirm,
+  okEnabled = true,
+  checkbox
+}) => {
   const [checked, setChecked] = React.useState(false);
 
   return (
@@ -40,15 +47,17 @@ const ConfirmationModal = ({ title, children, open, onClose, onConfirm, rawChild
       onClose={() => onClose(false)}
       aria-labelledby="confirm-dialog"
     >
-      <DialogTitle id="confirm-dialog">{title}</DialogTitle>
+      <DialogTitle id="confirm-dialog">
+        {title || i18n.t("common.confirmation")}
+      </DialogTitle>
       <DialogContent dividers>
-        {rawChildren ? children : <Typography>{children}</Typography>}
+        {children ? children : i18n.t("common.areyousure")}
         {checkbox && (
           <FormControlLabel
             control={
               <Switch
                 checked={checked}
-                onChange={(e) => setChecked(e.target.checked)}
+                onChange={e => setChecked(e.target.checked)}
                 name="confirmSwitch"
                 color="primary"
               />

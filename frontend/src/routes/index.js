@@ -80,12 +80,7 @@ const Routes = () => {
                   component={Schedules}
                   isPrivate
                 />
-                <Route
-                  exact
-                  path="/todolist"
-                  component={ToDoList}
-                  isPrivate
-                />
+                <Route exact path="/todolist" component={ToDoList} isPrivate />
                 <Route exact path="/tags" component={Tags} isPrivate />
                 <Route exact path="/contacts" component={Contacts} isPrivate />
                 <Route exact path="/helps" component={Helps} isPrivate />
@@ -128,6 +123,7 @@ const Routes = () => {
                   isPrivate
                 />
                 
+
                 <Route exact path="/chats/:id?" component={Chat} isPrivate />
                 <Route exact path="/whatsapp-chats" component={WhatsAppChats} isPrivate />
                 {showCampaigns && (
@@ -162,7 +158,6 @@ const Routes = () => {
                       component={CampaignsConfig}
                       isPrivate
                     />
-                    
                   </>
                 )}
               </LoggedInLayout>

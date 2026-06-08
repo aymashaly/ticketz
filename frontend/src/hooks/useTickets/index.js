@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import toastError from "../../errors/toastError";
 
 import api from "../../services/api";
@@ -9,7 +9,8 @@ const useTickets = ({
   contactId,
   tags,
   users,
-  pageNumber,
+  nextUpdatedAt,
+  nextTicketId,
   status,
   groups,
   date,
@@ -18,11 +19,11 @@ const useTickets = ({
   queueIds,
   withUnreadMessages,
   notClosed,
-  all,
+  all
 }) => {
   const [loading, setLoading] = useState(true);
-  const [hasMore, setHasMore] = useState(false);
   const [tickets, setTickets] = useState([]);
+  const [refreshTrigger, setRefreshTrigger] = useState(0);
 
   useEffect(() => {
     setLoading(true);
@@ -33,7 +34,8 @@ const useTickets = ({
             params: {
               isSearch,
               searchParam,
-              pageNumber,
+              nextUpdatedAt,
+              nextTicketId,
               contactId,
               tags,
               users,
@@ -45,11 +47,10 @@ const useTickets = ({
               queueIds,
               withUnreadMessages,
               notClosed,
-              all,
-            },
+              all
+            }
           });
           setTickets(data.tickets);
-          setHasMore(data.hasMore);
           setLoading(false);
         } catch (err) {
           setLoading(false);
@@ -64,7 +65,8 @@ const useTickets = ({
     contactId,
     tags,
     users,
-    pageNumber,
+    nextUpdatedAt,
+    nextTicketId,
     status,
     groups,
     date,
@@ -72,9 +74,63 @@ const useTickets = ({
     showAll,
     queueIds,
     withUnreadMessages,
+    isSearch,
+    notClosed,
+    all,
+    refreshTrigger
   ]);
 
-  return { tickets, loading, hasMore };
+  const refetch = useCallback(() => {
+    setRefreshTrigger(prevState => prevState + 1);
+  }, []);
+
+  const fetchSince = useCallback(
+    async minUpdatedAt => {
+      const { data } = await api.get("/tickets", {
+        params: {
+          isSearch,
+          searchParam,
+          contactId,
+          tags,
+          users,
+          status,
+          groups,
+          date,
+          updatedAt,
+          showAll,
+          queueIds,
+          withUnreadMessages,
+          notClosed,
+          all,
+          minUpdatedAt
+        }
+      });
+      return data.tickets;
+    },
+    [
+      isSearch,
+      searchParam,
+      contactId,
+      tags,
+      users,
+      status,
+      groups,
+      date,
+      updatedAt,
+      showAll,
+      queueIds,
+      withUnreadMessages,
+      notClosed,
+      all
+    ]
+  );
+
+  return {
+    tickets,
+    loading,
+    refetch,
+    fetchSince
+  };
 };
 
 export default useTickets;

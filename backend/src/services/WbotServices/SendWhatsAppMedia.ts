@@ -1,4 +1,8 @@
-import { WAMessage, AnyMediaMessageContent, AnyMessageContent } from "libzapitu-rf";
+import {
+  WAMessage,
+  AnyMediaMessageContent,
+  AnyMessageContent
+} from "libzapitu-rf";
 import fs from "fs";
 import { exec } from "child_process";
 import path from "path";
@@ -183,7 +187,7 @@ export const SendWhatsAppMedia = async ({
         mimetype: media.mimetype,
         filename: fileName || media.originalname
       },
-      ticket
+      { destination: ticket }
     );
     readableFile.destroy();
 
