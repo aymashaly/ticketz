@@ -3,3 +3,4 @@
 /.project
 dist/ticketz-backend.tar
 dist/ticketz-frontend.tar
+/scripts
