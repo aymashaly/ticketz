@@ -1,76 +1,81 @@
-"use strict";
+import { QueryInterface, DataTypes } from "sequelize";
 
-module.exports = {
-  up: (queryInterface, Sequelize) => {
-    return queryInterface.createTable("BulkMessages", {
+export default {
+  up: async (queryInterface: QueryInterface) => {
+    const tables = (await queryInterface.showAllTables()) as string[];
+    if (tables.includes("BulkMessages")) {
+      return;
+    }
+
+    await queryInterface.createTable("BulkMessages", {
       id: {
-        type: Sequelize.INTEGER,
+        type: DataTypes.INTEGER,
         autoIncrement: true,
         primaryKey: true,
         allowNull: false
       },
       message: {
-        type: Sequelize.TEXT,
+        type: DataTypes.TEXT,
         allowNull: true
       },
       mediaPath: {
-        type: Sequelize.STRING,
+        type: DataTypes.STRING,
         allowNull: true
       },
       status: {
-        type: Sequelize.STRING,
+        type: DataTypes.STRING,
         allowNull: false,
         defaultValue: "PENDING"
       },
       sentAt: {
-        type: Sequelize.DATE,
+        type: DataTypes.DATE,
         allowNull: true
       },
       deliveredAt: {
-        type: Sequelize.DATE,
+        type: DataTypes.DATE,
         allowNull: true
       },
       errorMessage: {
-        type: Sequelize.TEXT,
+        type: DataTypes.TEXT,
         allowNull: true
       },
       messageId: {
-        type: Sequelize.STRING,
+        type: DataTypes.STRING,
         allowNull: true
       },
       bulkCampaignId: {
-        type: Sequelize.INTEGER,
+        type: DataTypes.INTEGER,
         references: { model: "BulkCampaigns", key: "id" },
         onUpdate: "CASCADE",
         onDelete: "CASCADE",
         allowNull: false
       },
       contactId: {
-        type: Sequelize.INTEGER,
+        type: DataTypes.INTEGER,
         references: { model: "Contacts", key: "id" },
         onUpdate: "CASCADE",
         onDelete: "CASCADE",
         allowNull: false
       },
       whatsappId: {
-        type: Sequelize.INTEGER,
+        type: DataTypes.INTEGER,
         references: { model: "Whatsapps", key: "id" },
         onUpdate: "CASCADE",
         onDelete: "CASCADE",
         allowNull: false
       },
       createdAt: {
-        type: Sequelize.DATE,
+        type: DataTypes.DATE,
         allowNull: false
       },
       updatedAt: {
-        type: Sequelize.DATE,
+        type: DataTypes.DATE,
         allowNull: false
       }
     });
   },
 
-  down: (queryInterface) => {
+  down: (queryInterface: QueryInterface) => {
     return queryInterface.dropTable("BulkMessages");
   }
 };

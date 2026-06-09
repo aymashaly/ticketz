@@ -1,121 +1,126 @@
-"use strict";
+import { QueryInterface, DataTypes } from "sequelize";
 
-module.exports = {
-  up: (queryInterface, Sequelize) => {
-    return queryInterface.createTable("BulkCampaigns", {
+export default {
+  up: async (queryInterface: QueryInterface) => {
+    const tables = (await queryInterface.showAllTables()) as string[];
+    if (tables.includes("BulkCampaigns")) {
+      return;
+    }
+
+    await queryInterface.createTable("BulkCampaigns", {
       id: {
-        type: Sequelize.INTEGER,
+        type: DataTypes.INTEGER,
         autoIncrement: true,
         primaryKey: true,
         allowNull: false
       },
       name: {
-        type: Sequelize.STRING,
+        type: DataTypes.STRING,
         allowNull: false
       },
       message: {
-        type: Sequelize.TEXT,
+        type: DataTypes.TEXT,
         allowNull: true
       },
       mediaPath: {
-        type: Sequelize.STRING,
+        type: DataTypes.STRING,
         allowNull: true
       },
       mediaName: {
-        type: Sequelize.STRING,
+        type: DataTypes.STRING,
         allowNull: true
       },
       whatsappIds: {
-        type: Sequelize.JSON,
+        type: DataTypes.JSON,
         allowNull: false,
         defaultValue: []
       },
       tagIds: {
-        type: Sequelize.JSON,
+        type: DataTypes.JSON,
         allowNull: false,
         defaultValue: []
       },
       sendToAll: {
-        type: Sequelize.BOOLEAN,
+        type: DataTypes.BOOLEAN,
         allowNull: false,
         defaultValue: false
       },
       status: {
-        type: Sequelize.STRING,
+        type: DataTypes.STRING,
         allowNull: false,
         defaultValue: "PENDING"
       },
       messagesPerHour: {
-        type: Sequelize.INTEGER,
+        type: DataTypes.INTEGER,
         allowNull: false,
         defaultValue: 30
       },
       minDelay: {
-        type: Sequelize.INTEGER,
+        type: DataTypes.INTEGER,
         allowNull: false,
         defaultValue: 5
       },
       maxDelay: {
-        type: Sequelize.INTEGER,
+        type: DataTypes.INTEGER,
         allowNull: false,
         defaultValue: 15
       },
       randomizeMessage: {
-        type: Sequelize.BOOLEAN,
+        type: DataTypes.BOOLEAN,
         allowNull: false,
         defaultValue: true
       },
       totalContacts: {
-        type: Sequelize.INTEGER,
+        type: DataTypes.INTEGER,
         allowNull: false,
         defaultValue: 0
       },
       sentCount: {
-        type: Sequelize.INTEGER,
+        type: DataTypes.INTEGER,
         allowNull: false,
         defaultValue: 0
       },
       deliveredCount: {
-        type: Sequelize.INTEGER,
+        type: DataTypes.INTEGER,
         allowNull: false,
         defaultValue: 0
       },
       failedCount: {
-        type: Sequelize.INTEGER,
+        type: DataTypes.INTEGER,
         allowNull: false,
         defaultValue: 0
       },
       scheduledAt: {
-        type: Sequelize.DATE,
+        type: DataTypes.DATE,
         allowNull: true
       },
       startedAt: {
-        type: Sequelize.DATE,
+        type: DataTypes.DATE,
         allowNull: true
       },
       completedAt: {
-        type: Sequelize.DATE,
+        type: DataTypes.DATE,
         allowNull: true
       },
       companyId: {
-        type: Sequelize.INTEGER,
+        type: DataTypes.INTEGER,
         references: { model: "Companies", key: "id" },
         onUpdate: "CASCADE",
         onDelete: "CASCADE",
         allowNull: false
       },
       createdAt: {
-        type: Sequelize.DATE,
+        type: DataTypes.DATE,
         allowNull: false
       },
       updatedAt: {
-        type: Sequelize.DATE,
+        type: DataTypes.DATE,
         allowNull: false
       }
     });
   },
 
-  down: (queryInterface) => {
+  down: (queryInterface: QueryInterface) => {
     return queryInterface.dropTable("BulkCampaigns");
   }
 };

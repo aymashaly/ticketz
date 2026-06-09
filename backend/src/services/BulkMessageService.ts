@@ -2,11 +2,14 @@ import BulkCampaign from "../models/BulkCampaign";
 import BulkMessage from "../models/BulkMessage";
 import Contact from "../models/Contact";
 import Whatsapp from "../models/Whatsapp";
+import fs from "fs";
+import path from "path";
 import { getWbot } from "../libs/wbot";
 import { getIO } from "../libs/socket";
 import { logger } from "../utils/logger";
 import { getMessageFileOptions } from "./WbotServices/SendWhatsAppMedia";
-import path from "path";
+import { getJidOf } from "./WbotServices/getJidOf";
+import uploadConfig from "../config/upload";
 
 class BulkMessageService {
   private static processingCampaigns = new Set<number>();
@@ -182,42 +185,43 @@ class BulkMessageService {
     }
 
     const wbot = getWbot(whatsapp.id);
-    const contactNumber = contact.number.replace(/\D/g, "");
-    const chatId = `${contactNumber}@c.us`;
+    const chatId = getJidOf(contact);
 
-    let messageText = bulkMessage.message;
+    const messageText = bulkMessage.message;
 
     try {
       let sentMessage;
 
-      if (messageText) {
-        // Send text message first
-        sentMessage = await wbot.sendMessage(chatId, {
-          text: messageText
-        });
-      }
-
       if (bulkMessage.mediaPath) {
-        // Send media - mediaPath is just the filename
-        const filePath = path.resolve("public", bulkMessage.mediaPath);
-        
-        // Check if file exists
-        const fs = require('fs');
+        // Send media + text as a SINGLE message (text as caption under the image)
+        // so the contact sees ONE notification with the image first and the
+        // caption below it, instead of two separate messages arriving out of order.
+        // mediaPath is just the filename inside the public folder
+        const filePath = path.join(
+          uploadConfig.directory,
+          bulkMessage.mediaPath
+        );
+
         if (!fs.existsSync(filePath)) {
           throw new Error(`Media file not found: ${filePath}`);
         }
-        
+
         const mediaContent = await getMessageFileOptions(
-          bulkMessage.mediaPath.split('/').pop() || "media",
+          path.basename(bulkMessage.mediaPath),
           filePath
         );
-        
+
         if (mediaContent && Object.keys(mediaContent).length > 0) {
-          const mediaMessage = await wbot.sendMessage(chatId, mediaContent);
-          if (!sentMessage) {
-            sentMessage = mediaMessage;
-          }
+          sentMessage = await wbot.sendMessage(chatId, {
+            ...mediaContent,
+            ...(messageText ? { caption: messageText } : {})
+          });
         }
+      } else if (messageText) {
+        // Text-only campaign: send as a single text message
+        sentMessage = await wbot.sendMessage(chatId, {
+          text: messageText
+        });
       }
 
       if (!sentMessage) {
@@ -248,7 +252,7 @@ class BulkMessageService {
 
   public static async resumeAllCampaigns(): Promise<void> {
     const runningCampaigns = await BulkCampaign.findAll({
-      where: { status: "RUNNING" }
+      where: { status: ["RUNNING", "PENDING"] }
     });
 
     for (const campaign of runningCampaigns) {

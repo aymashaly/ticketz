@@ -32,6 +32,8 @@ import CloudUploadIcon from "@material-ui/icons/CloudUpload";
 import SendIcon from "@material-ui/icons/Send";
 import DeleteIcon from "@material-ui/icons/Delete";
 import StopIcon from "@material-ui/icons/Stop";
+import PauseIcon from "@material-ui/icons/Pause";
+import PlayArrowIcon from "@material-ui/icons/PlayArrow";
 import PeopleIcon from "@material-ui/icons/People";
 import ImageIcon from "@material-ui/icons/Image";
 import MessageIcon from "@material-ui/icons/Message";
@@ -43,6 +45,7 @@ import MainHeader from "../../components/MainHeader";
 import Title from "../../components/Title";
 
 import api from "../../services/api";
+import { getBackendURL } from "../../services/config";
 import toastError from "../../errors/toastError";
 import { AuthContext } from "../../context/Auth/AuthContext";
 import { socketManager } from "../../context/Socket/SocketContext";
@@ -194,8 +197,8 @@ const BulkMessaging = () => {
 
   // WebSocket for real-time updates
   useEffect(() => {
-    const socket = socketManager.GetSocket();
-    
+    const socket = socketManager.GetSocket(user.companyId);
+
     const handleBulkCampaignUpdate = (data) => {
       console.log("Bulk campaign update received:", data);
       
@@ -204,13 +207,13 @@ const BulkMessaging = () => {
         fetchAllCampaigns();
       } else if (data.action === "message-sent" || data.action === "message-failed") {
         // Update specific campaign in real-time
-        setAllCampaigns(prevCampaigns => 
-          prevCampaigns.map(campaign => 
-            campaign.id === data.campaignId 
-              ? { 
-                  ...campaign, 
-                  sent: data.sentCount || campaign.sent,
-                  failed: data.failedCount || campaign.failed
+        setAllCampaigns(prevCampaigns =>
+          prevCampaigns.map(campaign =>
+            campaign.id === data.campaignId
+              ? {
+                  ...campaign,
+                  sent: data.sentCount ?? campaign.sent,
+                  failed: data.failedCount ?? campaign.failed
                 }
               : campaign
           )
@@ -250,14 +253,17 @@ const BulkMessaging = () => {
 
   const fetchContactCount = async () => {
     try {
-      let url = "/contacts/count";
       let params = {};
-      
-      if (targetingMode === "tags" && selectedTags.length > 0) {
+
+      if (targetingMode === "tags") {
+        if (selectedTags.length === 0) {
+          setContactCount(0);
+          return;
+        }
         params.tags = selectedTags.join(",");
       }
-      
-      const { data } = await api.get(url, { params });
+
+      const { data } = await api.get("/contacts/count", { params });
       setContactCount(data.count || 0);
     } catch (err) {
       console.error("Error fetching contact count:", err);
@@ -268,9 +274,10 @@ const BulkMessaging = () => {
   const fetchAllCampaigns = async () => {
     try {
       const { data } = await api.get("/bulk-campaigns/all");
-      setAllCampaigns(data || []);
+      setAllCampaigns(Array.isArray(data) ? data : []);
     } catch (err) {
       console.error("Error fetching campaigns:", err);
+      toastError(err);
     }
   };
 
@@ -332,6 +339,15 @@ const BulkMessaging = () => {
 
     if (contactCount === 0) {
       toast.error("No contacts found for the selected criteria");
+      return;
+    }
+
+    if (
+      !messagesPerHour || messagesPerHour < 1 ||
+      !minDelay || minDelay < 1 ||
+      !maxDelay || maxDelay < minDelay
+    ) {
+      toast.error("Check the anti-ban settings: delays must be positive and max delay must be greater than min delay");
       return;
     }
 
@@ -509,7 +525,7 @@ const BulkMessaging = () => {
                     />
                     
                     <Typography variant="body2" color="textSecondary">
-                      Success Rate: {campaign.sent > 0 ? ((campaign.delivered / campaign.sent) * 100).toFixed(1) : 0}%
+                      Sent: {campaign.sent} | Failed: {campaign.failed}
                     </Typography>
                     
                     {campaign.completedAt && (
@@ -527,30 +543,44 @@ const BulkMessaging = () => {
                     >
                       Details
                     </Button>
-                    
+
+                    {(campaign.status === "PENDING") && (
+                      <Button
+                        size="small"
+                        color="primary"
+                        variant="contained"
+                        startIcon={<PlayArrowIcon />}
+                        onClick={() => handleResumeCampaign(campaign.id)}
+                      >
+                        Start
+                      </Button>
+                    )}
+
                     {campaign.status === "RUNNING" && (
                       <Button
                         size="small"
-                        color="secondary"
-                        startIcon={<StopIcon />}
+                        color="primary"
+                        variant="contained"
+                        startIcon={<PauseIcon />}
                         onClick={() => handlePauseCampaign(campaign.id)}
                       >
                         Pause
                       </Button>
                     )}
-                    
+
                     {campaign.status === "PAUSED" && (
                       <Button
                         size="small"
                         color="primary"
-                        startIcon={<SendIcon />}
+                        variant="contained"
+                        startIcon={<PlayArrowIcon />}
                         onClick={() => handleResumeCampaign(campaign.id)}
                       >
                         Resume
                       </Button>
                     )}
-                    
-                    {(campaign.status === "RUNNING" || campaign.status === "PAUSED") && (
+
+                    {(campaign.status === "RUNNING" || campaign.status === "PAUSED" || campaign.status === "PENDING") && (
                       <Button
                         size="small"
                         color="secondary"
@@ -560,7 +590,7 @@ const BulkMessaging = () => {
                         Stop
                       </Button>
                     )}
-                    
+
                     {(campaign.status === "COMPLETED" || campaign.status === "CANCELLED") && (
                       <Button
                         size="small"
@@ -803,7 +833,7 @@ const BulkMessaging = () => {
                         type="number"
                         label="Messages per Hour"
                         value={messagesPerHour}
-                        onChange={(e) => setMessagesPerHour(parseInt(e.target.value))}
+                        onChange={(e) => setMessagesPerHour(parseInt(e.target.value, 10) || 0)}
                         inputProps={{ min: 1, max: 100 }}
                         variant="outlined"
                       />
@@ -815,7 +845,7 @@ const BulkMessaging = () => {
                         type="number"
                         label="Min Delay (seconds)"
                         value={minDelay}
-                        onChange={(e) => setMinDelay(parseInt(e.target.value))}
+                        onChange={(e) => setMinDelay(parseInt(e.target.value, 10) || 0)}
                         inputProps={{ min: 1 }}
                         variant="outlined"
                       />
@@ -827,7 +857,7 @@ const BulkMessaging = () => {
                         type="number"
                         label="Max Delay (seconds)"
                         value={maxDelay}
-                        onChange={(e) => setMaxDelay(parseInt(e.target.value))}
+                        onChange={(e) => setMaxDelay(parseInt(e.target.value, 10) || 0)}
                         inputProps={{ min: minDelay + 1 }}
                         variant="outlined"
                       />
@@ -940,7 +970,7 @@ const BulkMessaging = () => {
                           <Typography variant="body2" color="textSecondary">Sent Image</Typography>
                           <Box mt={1}>
                             <img
-                              src={`${process.env.REACT_APP_BACKEND_URL || 'http://localhost:8080'}/public/${campaignDetails.mediaPath}`}
+                              src={`${getBackendURL()}/public/${campaignDetails.mediaPath}`}
                               alt="Campaign media"
                               style={{
                                 maxWidth: '100%',

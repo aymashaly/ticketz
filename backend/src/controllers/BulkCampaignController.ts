@@ -6,7 +6,6 @@ import BulkCampaign from "../models/BulkCampaign";
 import BulkMessage from "../models/BulkMessage";
 import Contact from "../models/Contact";
 import Whatsapp from "../models/Whatsapp";
-import ContactTag from "../models/ContactTag";
 import Tag from "../models/Tag";
 import AppError from "../errors/AppError";
 import { getIO } from "../libs/socket";
@@ -87,16 +86,56 @@ export const store = async (req: Request, res: Response): Promise<Response> => {
   const data = req.body as BulkCampaignData;
   const files = req.files as Express.Multer.File[];
 
+  // FormData sends everything as strings: parse JSON fields and
+  // convert types BEFORE validating
+  let whatsappIds: number[];
+  let tagIds: number[];
+  try {
+    whatsappIds =
+      typeof data.whatsappIds === "string"
+        ? JSON.parse(data.whatsappIds)
+        : data.whatsappIds;
+    tagIds =
+      typeof data.tagIds === "string" ? JSON.parse(data.tagIds) : data.tagIds;
+  } catch (err) {
+    throw new AppError("Invalid whatsappIds or tagIds");
+  }
+
+  const sendToAll =
+    typeof data.sendToAll === "string"
+      ? data.sendToAll === "true"
+      : !!data.sendToAll;
+
+  const messagesPerHour = Number(data.messagesPerHour);
+  const minDelay = Number(data.minDelay);
+  const maxDelay = Number(data.maxDelay);
+
   const schema = Yup.object().shape({
     name: Yup.string().required(),
     whatsappIds: Yup.array().of(Yup.number()).min(1).required(),
     messagesPerHour: Yup.number().min(1).max(100).required(),
     minDelay: Yup.number().min(1).required(),
-    maxDelay: Yup.number().min(1).required()
+    maxDelay: Yup.number()
+      .min(1)
+      .required()
+      .test(
+        "max-gte-min",
+        "maxDelay must be greater than or equal to minDelay",
+        // eslint-disable-next-line func-names
+        function (value) {
+          return value >= this.parent.minDelay;
+        }
+      )
   });
 
   try {
-    await schema.validate(data);
+    await schema.validate({
+      name: data.name,
+      whatsappIds,
+      messagesPerHour,
+      minDelay,
+      maxDelay
+    });
   } catch (err) {
     throw new AppError(err.message);
   }
@@ -105,6 +144,18 @@ export const store = async (req: Request, res: Response): Promise<Response> => {
   if (!data.message && (!files || files.length === 0)) {
     throw new AppError("Either message text or media file is required");
   }
+
+  // Make sure the selected connections belong to this company and are online
+  const validWhatsapps = await Whatsapp.findAll({
+    where: { id: whatsappIds, companyId, status: "CONNECTED" },
+    attributes: ["id"]
+  });
+
+  if (validWhatsapps.length === 0) {
+    throw new AppError("No connected WhatsApp found for the selected ids");
+  }
+
+  const validWhatsappIds = validWhatsapps.map(w => w.id);
 
   // Handle media upload
   let mediaPath = "";
@@ -116,44 +167,29 @@ export const store = async (req: Request, res: Response): Promise<Response> => {
     mediaName = file.filename;
   }
 
-  // Parse JSON strings and convert boolean
-  const whatsappIds = typeof data.whatsappIds === 'string' 
-    ? JSON.parse(data.whatsappIds) 
-    : data.whatsappIds;
-  const tagIds = typeof data.tagIds === 'string' 
-    ? JSON.parse(data.tagIds) 
-    : data.tagIds;
-  
-  // Convert sendToAll to boolean if it's a string
-  const sendToAll = typeof data.sendToAll === 'string' 
-    ? data.sendToAll === 'true' 
-    : data.sendToAll;
-
-  // Get contacts based on criteria
+  // Get contacts based on criteria (groups excluded)
   let contacts: Contact[] = [];
-  
+
   if (sendToAll) {
     contacts = await Contact.findAll({
-      where: { companyId },
-      attributes: ['id', 'name', 'number']
+      where: { companyId, isGroup: false },
+      attributes: ["id", "name", "number"]
     });
   } else if (tagIds && tagIds.length > 0) {
-    // Get contacts with specific tags using raw SQL for accuracy
-    const { QueryTypes } = require("sequelize");
-    const sequelize = require("../database/index").default;
-    
-    const result = await sequelize.query(`
-      SELECT DISTINCT c.id, c.name, c.number
-      FROM "Contacts" c
-      INNER JOIN "ContactTags" ct ON c.id = ct."contactId"
-      WHERE c."companyId" = $1 
-      AND ct."tagId" = ANY($2)
-    `, {
-      bind: [companyId, tagIds],
-      type: QueryTypes.SELECT
+    contacts = await Contact.findAll({
+      where: { companyId, isGroup: false },
+      attributes: ["id", "name", "number"],
+      include: [
+        {
+          model: Tag,
+          as: "tags",
+          attributes: [],
+          through: { attributes: [] },
+          where: { id: tagIds },
+          required: true
+        }
+      ]
     });
-    
-    contacts = result;
   }
 
   if (contacts.length === 0) {
@@ -162,22 +198,26 @@ export const store = async (req: Request, res: Response): Promise<Response> => {
 
   // Create bulk campaign
   const campaign = await BulkCampaign.create({
-    ...data,
-    sendToAll, // Use the parsed boolean value
-    whatsappIds,
-    tagIds,
+    name: data.name,
+    message: data.message || "",
+    sendToAll,
+    whatsappIds: validWhatsappIds,
+    tagIds: tagIds || [],
+    messagesPerHour,
+    minDelay,
+    maxDelay,
     companyId,
     mediaPath,
     mediaName,
     totalContacts: contacts.length,
     status: "PENDING"
-  });
+  } as any);
 
   // Create bulk messages for each contact
   const bulkMessages = [];
   for (let i = 0; i < contacts.length; i++) {
     const contact = contacts[i];
-    const whatsappId = whatsappIds[i % whatsappIds.length]; // Load balancing
+    const whatsappId = validWhatsappIds[i % validWhatsappIds.length]; // Load balancing
 
     bulkMessages.push({
       bulkCampaignId: campaign.id,
@@ -297,8 +337,8 @@ export const resume = async (req: Request, res: Response): Promise<Response> => 
     throw new AppError("Campaign not found", 404);
   }
 
-  if (campaign.status !== "PAUSED") {
-    throw new AppError("Can only resume paused campaigns", 400);
+  if (campaign.status !== "PAUSED" && campaign.status !== "PENDING") {
+    throw new AppError("Can only resume paused or pending campaigns", 400);
   }
 
   await campaign.update({ status: "RUNNING" });
