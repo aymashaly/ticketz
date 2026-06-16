@@ -235,15 +235,21 @@ export const store = async (req: Request, res: Response): Promise<Response> => {
   BulkMessageService.processCampaign(campaign.id);
 
   const io = getIO();
-  io.to(`company-${companyId}-mainchannel`).emit(`company-${companyId}-bulk-campaign`, {
-    action: "create",
-    campaign
-  });
+  io.to(`company-${companyId}-mainchannel`).emit(
+    `company-${companyId}-bulk-campaign`,
+    {
+      action: "create",
+      campaign
+    }
+  );
 
   return res.status(201).json(campaign);
 };
 
-export const update = async (req: Request, res: Response): Promise<Response> => {
+export const update = async (
+  req: Request,
+  res: Response
+): Promise<Response> => {
   const { id } = req.params;
   const { companyId } = req.user;
   const data = req.body;
@@ -263,15 +269,21 @@ export const update = async (req: Request, res: Response): Promise<Response> => 
   await campaign.update(data);
 
   const io = getIO();
-  io.to(`company-${companyId}-mainchannel`).emit(`company-${companyId}-bulk-campaign`, {
-    action: "update",
-    campaign
-  });
+  io.to(`company-${companyId}-mainchannel`).emit(
+    `company-${companyId}-bulk-campaign`,
+    {
+      action: "update",
+      campaign
+    }
+  );
 
   return res.json(campaign);
 };
 
-export const remove = async (req: Request, res: Response): Promise<Response> => {
+export const remove = async (
+  req: Request,
+  res: Response
+): Promise<Response> => {
   const { id } = req.params;
   const { companyId } = req.user;
 
@@ -290,10 +302,13 @@ export const remove = async (req: Request, res: Response): Promise<Response> => 
   await campaign.destroy();
 
   const io = getIO();
-  io.to(`company-${companyId}-mainchannel`).emit(`company-${companyId}-bulk-campaign`, {
-    action: "delete",
-    campaignId: id
-  });
+  io.to(`company-${companyId}-mainchannel`).emit(
+    `company-${companyId}-bulk-campaign`,
+    {
+      action: "delete",
+      campaignId: id
+    }
+  );
 
   return res.json({ message: "Campaign deleted successfully" });
 };
@@ -317,15 +332,21 @@ export const pause = async (req: Request, res: Response): Promise<Response> => {
   await campaign.update({ status: "PAUSED" });
 
   const io = getIO();
-  io.to(`company-${companyId}-mainchannel`).emit(`company-${companyId}-bulk-campaign`, {
-    action: "update",
-    campaign
-  });
+  io.to(`company-${companyId}-mainchannel`).emit(
+    `company-${companyId}-bulk-campaign`,
+    {
+      action: "update",
+      campaign
+    }
+  );
 
   return res.json({ message: "Campaign paused successfully" });
 };
 
-export const resume = async (req: Request, res: Response): Promise<Response> => {
+export const resume = async (
+  req: Request,
+  res: Response
+): Promise<Response> => {
   const { id } = req.params;
   const { companyId } = req.user;
 
@@ -337,20 +358,35 @@ export const resume = async (req: Request, res: Response): Promise<Response> => 
     throw new AppError("Campaign not found", 404);
   }
 
-  if (campaign.status !== "PAUSED" && campaign.status !== "PENDING") {
-    throw new AppError("Can only resume paused or pending campaigns", 400);
+  if (
+    campaign.status !== "PAUSED" &&
+    campaign.status !== "PENDING" &&
+    campaign.status !== "CANCELLED"
+  ) {
+    throw new AppError(
+      "Can only resume paused, pending or cancelled campaigns",
+      400
+    );
   }
 
-  await campaign.update({ status: "RUNNING" });
+  const wasCancelled = campaign.status === "CANCELLED";
+
+  await campaign.update({
+    status: "RUNNING",
+    ...(wasCancelled ? { completedAt: null as any } : {})
+  });
 
   // Resume processing the campaign
   BulkMessageService.processCampaign(campaign.id);
 
   const io = getIO();
-  io.to(`company-${companyId}-mainchannel`).emit(`company-${companyId}-bulk-campaign`, {
-    action: "update",
-    campaign
-  });
+  io.to(`company-${companyId}-mainchannel`).emit(
+    `company-${companyId}-bulk-campaign`,
+    {
+      action: "update",
+      campaign
+    }
+  );
 
   return res.json({ message: "Campaign resumed successfully" });
 };
@@ -367,47 +403,45 @@ export const stop = async (req: Request, res: Response): Promise<Response> => {
     throw new AppError("Campaign not found", 404);
   }
 
-  await campaign.update({ 
+  await campaign.update({
     status: "CANCELLED",
     completedAt: new Date()
   });
 
-  // Update pending messages to cancelled
-  await BulkMessage.update(
-    { status: "CANCELLED" },
-    { 
-      where: { 
-        bulkCampaignId: id,
-        status: "PENDING"
-      }
-    }
-  );
+  // PENDING BulkMessages are intentionally left intact so that a future
+  // resume of a cancelled campaign can pick them up and finish dispatching.
 
   const io = getIO();
-  io.to(`company-${companyId}-mainchannel`).emit(`company-${companyId}-bulk-campaign`, {
-    action: "update",
-    campaign
-  });
+  io.to(`company-${companyId}-mainchannel`).emit(
+    `company-${companyId}-bulk-campaign`,
+    {
+      action: "update",
+      campaign
+    }
+  );
 
   return res.json({ message: "Campaign stopped successfully" });
 };
 
-export const getActive = async (req: Request, res: Response): Promise<Response> => {
+export const getActive = async (
+  req: Request,
+  res: Response
+): Promise<Response> => {
   const { companyId } = req.user;
 
   const campaigns = await BulkCampaign.findAll({
-    where: { 
+    where: {
       companyId,
       status: { [Op.in]: ["PENDING", "RUNNING", "PAUSED"] }
     },
     order: [["createdAt", "DESC"]],
     attributes: [
-      "id", 
-      "name", 
-      "status", 
-      "totalContacts", 
-      "sentCount", 
-      "deliveredCount", 
+      "id",
+      "name",
+      "status",
+      "totalContacts",
+      "sentCount",
+      "deliveredCount",
       "failedCount",
       "createdAt"
     ]
@@ -427,19 +461,22 @@ export const getActive = async (req: Request, res: Response): Promise<Response> 
   return res.json(activeCampaigns);
 };
 
-export const getAll = async (req: Request, res: Response): Promise<Response> => {
+export const getAll = async (
+  req: Request,
+  res: Response
+): Promise<Response> => {
   const { companyId } = req.user;
 
   const campaigns = await BulkCampaign.findAll({
     where: { companyId },
     order: [["createdAt", "DESC"]],
     attributes: [
-      "id", 
-      "name", 
-      "status", 
-      "totalContacts", 
-      "sentCount", 
-      "deliveredCount", 
+      "id",
+      "name",
+      "status",
+      "totalContacts",
+      "sentCount",
+      "deliveredCount",
       "failedCount",
       "createdAt",
       "completedAt"
@@ -461,7 +498,10 @@ export const getAll = async (req: Request, res: Response): Promise<Response> => 
   return res.json(allCampaigns);
 };
 
-export const getDetails = async (req: Request, res: Response): Promise<Response> => {
+export const getDetails = async (
+  req: Request,
+  res: Response
+): Promise<Response> => {
   const { id } = req.params;
   const { companyId } = req.user;
 

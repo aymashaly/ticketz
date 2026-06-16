@@ -50,50 +50,50 @@ import toastError from "../../errors/toastError";
 import { AuthContext } from "../../context/Auth/AuthContext";
 import { socketManager } from "../../context/Socket/SocketContext";
 
-const useStyles = makeStyles((theme) => ({
+const useStyles = makeStyles(theme => ({
   mainPaper: {
     flex: 1,
     padding: theme.spacing(3),
     overflowY: "scroll",
-    ...theme.scrollbarStyles,
+    ...theme.scrollbarStyles
   },
   formControl: {
     minWidth: 120,
-    width: "100%",
+    width: "100%"
   },
   chips: {
     display: "flex",
-    flexWrap: "wrap",
+    flexWrap: "wrap"
   },
   chip: {
-    margin: 2,
+    margin: 2
   },
   uploadButton: {
     marginTop: theme.spacing(1),
-    marginBottom: theme.spacing(1),
+    marginBottom: theme.spacing(1)
   },
   previewImage: {
     maxWidth: "100%",
     maxHeight: 200,
     marginTop: theme.spacing(1),
     borderRadius: theme.shape.borderRadius,
-    border: `1px solid ${theme.palette.divider}`,
+    border: `1px solid ${theme.palette.divider}`
   },
   campaignCard: {
     marginBottom: theme.spacing(2),
-    border: `1px solid ${theme.palette.divider}`,
+    border: `1px solid ${theme.palette.divider}`
   },
   antibanSettings: {
     backgroundColor: theme.palette.background.default,
     padding: theme.spacing(2),
     borderRadius: theme.shape.borderRadius,
     marginTop: theme.spacing(2),
-    border: `1px solid ${theme.palette.divider}`,
+    border: `1px solid ${theme.palette.divider}`
   },
   sectionTitle: {
     marginBottom: theme.spacing(2),
     color: theme.palette.primary.main,
-    fontWeight: 600,
+    fontWeight: 600
   },
   contactCounter: {
     backgroundColor: theme.palette.primary.main,
@@ -103,14 +103,14 @@ const useStyles = makeStyles((theme) => ({
     display: "inline-flex",
     alignItems: "center",
     gap: theme.spacing(1),
-    marginTop: theme.spacing(1),
+    marginTop: theme.spacing(1)
   },
   progressCard: {
     marginBottom: theme.spacing(1),
-    backgroundColor: theme.palette.background.paper,
+    backgroundColor: theme.palette.background.paper
   },
   statusChip: {
-    fontWeight: 600,
+    fontWeight: 600
   },
   uploadArea: {
     border: `2px dashed ${theme.palette.divider}`,
@@ -120,8 +120,8 @@ const useStyles = makeStyles((theme) => ({
     cursor: "pointer",
     transition: "border-color 0.3s",
     "&:hover": {
-      borderColor: theme.palette.primary.main,
-    },
+      borderColor: theme.palette.primary.main
+    }
   },
   mediaPreview: {
     display: "flex",
@@ -130,31 +130,31 @@ const useStyles = makeStyles((theme) => ({
     marginTop: theme.spacing(1),
     padding: theme.spacing(1),
     backgroundColor: theme.palette.background.default,
-    borderRadius: theme.shape.borderRadius,
+    borderRadius: theme.shape.borderRadius
   },
   emptyState: {
     textAlign: "center",
     padding: theme.spacing(4),
-    color: theme.palette.text.secondary,
+    color: theme.palette.text.secondary
   },
   createButton: {
-    marginBottom: theme.spacing(2),
+    marginBottom: theme.spacing(2)
   },
   dialogContent: {
-    minWidth: 600,
+    minWidth: 600
   },
   targetingSection: {
     border: `1px solid ${theme.palette.divider}`,
     borderRadius: theme.shape.borderRadius,
     padding: theme.spacing(2),
-    marginBottom: theme.spacing(2),
+    marginBottom: theme.spacing(2)
   },
   whatsappSection: {
     border: `1px solid ${theme.palette.divider}`,
     borderRadius: theme.shape.borderRadius,
     padding: theme.spacing(2),
-    marginBottom: theme.spacing(2),
-  },
+    marginBottom: theme.spacing(2)
+  }
 }));
 
 const BulkMessaging = () => {
@@ -199,13 +199,16 @@ const BulkMessaging = () => {
   useEffect(() => {
     const socket = socketManager.GetSocket(user.companyId);
 
-    const handleBulkCampaignUpdate = (data) => {
+    const handleBulkCampaignUpdate = data => {
       console.log("Bulk campaign update received:", data);
-      
+
       if (data.action === "update" || data.action === "create") {
         // Refresh campaigns list
         fetchAllCampaigns();
-      } else if (data.action === "message-sent" || data.action === "message-failed") {
+      } else if (
+        data.action === "message-sent" ||
+        data.action === "message-failed"
+      ) {
         // Update specific campaign in real-time
         setAllCampaigns(prevCampaigns =>
           prevCampaigns.map(campaign =>
@@ -218,7 +221,7 @@ const BulkMessaging = () => {
               : campaign
           )
         );
-        
+
         // If details dialog is open for this campaign, refresh details
         if (selectedCampaign && selectedCampaign.id === data.campaignId) {
           handleViewDetails(selectedCampaign);
@@ -226,10 +229,16 @@ const BulkMessaging = () => {
       }
     };
 
-    socket.on(`company-${user.companyId}-bulk-campaign`, handleBulkCampaignUpdate);
+    socket.on(
+      `company-${user.companyId}-bulk-campaign`,
+      handleBulkCampaignUpdate
+    );
 
     return () => {
-      socket.off(`company-${user.companyId}-bulk-campaign`, handleBulkCampaignUpdate);
+      socket.off(
+        `company-${user.companyId}-bulk-campaign`,
+        handleBulkCampaignUpdate
+      );
     };
   }, [user.companyId, selectedCampaign]);
 
@@ -281,13 +290,13 @@ const BulkMessaging = () => {
     }
   };
 
-  const handleFileSelect = (event) => {
+  const handleFileSelect = event => {
     const file = event.target.files[0];
     if (file) {
       if (file.type.startsWith("image/")) {
         setSelectedFile(file);
         const reader = new FileReader();
-        reader.onload = (e) => setPreviewUrl(e.target.result);
+        reader.onload = e => setPreviewUrl(e.target.result);
         reader.readAsDataURL(file);
       } else {
         toast.error("Please select an image file");
@@ -343,11 +352,16 @@ const BulkMessaging = () => {
     }
 
     if (
-      !messagesPerHour || messagesPerHour < 1 ||
-      !minDelay || minDelay < 1 ||
-      !maxDelay || maxDelay < minDelay
+      !messagesPerHour ||
+      messagesPerHour < 1 ||
+      !minDelay ||
+      minDelay < 1 ||
+      !maxDelay ||
+      maxDelay < minDelay
     ) {
-      toast.error("Check the anti-ban settings: delays must be positive and max delay must be greater than min delay");
+      toast.error(
+        "Check the anti-ban settings: delays must be positive and max delay must be greater than min delay"
+      );
       return;
     }
 
@@ -358,7 +372,10 @@ const BulkMessaging = () => {
       formData.append("name", campaignName);
       formData.append("message", messageText);
       formData.append("whatsappIds", JSON.stringify(selectedWhatsapps));
-      formData.append("tagIds", JSON.stringify(targetingMode === "all" ? [] : selectedTags));
+      formData.append(
+        "tagIds",
+        JSON.stringify(targetingMode === "all" ? [] : selectedTags)
+      );
       formData.append("sendToAll", targetingMode === "all");
       formData.append("messagesPerHour", messagesPerHour);
       formData.append("minDelay", minDelay);
@@ -370,8 +387,8 @@ const BulkMessaging = () => {
 
       await api.post("/bulk-campaigns", formData, {
         headers: {
-          "Content-Type": "multipart/form-data",
-        },
+          "Content-Type": "multipart/form-data"
+        }
       });
 
       toast.success("Bulk messaging campaign created successfully!");
@@ -384,7 +401,7 @@ const BulkMessaging = () => {
     }
   };
 
-  const handlePauseCampaign = async (campaignId) => {
+  const handlePauseCampaign = async campaignId => {
     try {
       await api.post(`/bulk-campaigns/${campaignId}/pause`);
       toast.success("Campaign paused successfully");
@@ -394,7 +411,7 @@ const BulkMessaging = () => {
     }
   };
 
-  const handleResumeCampaign = async (campaignId) => {
+  const handleResumeCampaign = async campaignId => {
     try {
       await api.post(`/bulk-campaigns/${campaignId}/resume`);
       toast.success("Campaign resumed successfully");
@@ -404,7 +421,7 @@ const BulkMessaging = () => {
     }
   };
 
-  const handleStopCampaign = async (campaignId) => {
+  const handleStopCampaign = async campaignId => {
     try {
       await api.post(`/bulk-campaigns/${campaignId}/stop`);
       toast.success("Campaign stopped successfully");
@@ -414,7 +431,7 @@ const BulkMessaging = () => {
     }
   };
 
-  const handleDeleteCampaign = async (campaignId) => {
+  const handleDeleteCampaign = async campaignId => {
     try {
       await api.delete(`/bulk-campaigns/${campaignId}`);
       toast.success("Campaign deleted successfully");
@@ -424,7 +441,7 @@ const BulkMessaging = () => {
     }
   };
 
-  const handleViewDetails = async (campaign) => {
+  const handleViewDetails = async campaign => {
     try {
       setSelectedCampaign(campaign);
       const { data } = await api.get(`/bulk-campaigns/${campaign.id}/details`);
@@ -441,14 +458,20 @@ const BulkMessaging = () => {
     setCampaignDetails(null);
   };
 
-  const getStatusColor = (status) => {
+  const getStatusColor = status => {
     switch (status) {
-      case "RUNNING": return "primary";
-      case "COMPLETED": return "default";
-      case "CANCELLED": return "secondary";
-      case "PENDING": return "default";
-      case "PAUSED": return "secondary";
-      default: return "default";
+      case "RUNNING":
+        return "primary";
+      case "COMPLETED":
+        return "default";
+      case "CANCELLED":
+        return "secondary";
+      case "PENDING":
+        return "default";
+      case "PAUSED":
+        return "secondary";
+      default:
+        return "default";
     }
   };
 
@@ -457,9 +480,14 @@ const BulkMessaging = () => {
       <MainHeader>
         <Title>Bulk Messaging</Title>
       </MainHeader>
-      
+
       <Paper className={classes.mainPaper} variant="outlined">
-        <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
+        <Box
+          display="flex"
+          justifyContent="space-between"
+          alignItems="center"
+          mb={3}
+        >
           <Typography variant="h4" component="h1">
             All Campaigns
           </Typography>
@@ -498,11 +526,16 @@ const BulkMessaging = () => {
           </Card>
         ) : (
           <Grid container spacing={2}>
-            {allCampaigns.map((campaign) => (
+            {allCampaigns.map(campaign => (
               <Grid item xs={12} md={6} lg={4} key={campaign.id}>
                 <Card className={classes.progressCard} elevation={2}>
                   <CardContent>
-                    <Box display="flex" justifyContent="space-between" alignItems="center" mb={1}>
+                    <Box
+                      display="flex"
+                      justifyContent="space-between"
+                      alignItems="center"
+                      mb={1}
+                    >
                       <Typography variant="h6" noWrap>
                         {campaign.name}
                       </Typography>
@@ -513,28 +546,41 @@ const BulkMessaging = () => {
                         className={classes.statusChip}
                       />
                     </Box>
-                    
-                    <Typography variant="body2" color="textSecondary" gutterBottom>
+
+                    <Typography
+                      variant="body2"
+                      color="textSecondary"
+                      gutterBottom
+                    >
                       Progress: {campaign.sent}/{campaign.total}
                     </Typography>
-                    
+
                     <LinearProgress
                       variant="determinate"
-                      value={campaign.total > 0 ? (campaign.sent / campaign.total) * 100 : 0}
+                      value={
+                        campaign.total > 0
+                          ? (campaign.sent / campaign.total) * 100
+                          : 0
+                      }
                       style={{ marginBottom: 8 }}
                     />
-                    
+
                     <Typography variant="body2" color="textSecondary">
                       Sent: {campaign.sent} | Failed: {campaign.failed}
                     </Typography>
-                    
+
                     {campaign.completedAt && (
-                      <Typography variant="body2" color="textSecondary" style={{ marginTop: 4 }}>
-                        Completed: {new Date(campaign.completedAt).toLocaleString()}
+                      <Typography
+                        variant="body2"
+                        color="textSecondary"
+                        style={{ marginTop: 4 }}
+                      >
+                        Completed:{" "}
+                        {new Date(campaign.completedAt).toLocaleString()}
                       </Typography>
                     )}
                   </CardContent>
-                  
+
                   <CardActions>
                     <Button
                       size="small"
@@ -544,7 +590,7 @@ const BulkMessaging = () => {
                       Details
                     </Button>
 
-                    {(campaign.status === "PENDING") && (
+                    {campaign.status === "PENDING" && (
                       <Button
                         size="small"
                         color="primary"
@@ -580,7 +626,21 @@ const BulkMessaging = () => {
                       </Button>
                     )}
 
-                    {(campaign.status === "RUNNING" || campaign.status === "PAUSED" || campaign.status === "PENDING") && (
+                    {campaign.status === "CANCELLED" && (
+                      <Button
+                        size="small"
+                        color="primary"
+                        variant="contained"
+                        startIcon={<PlayArrowIcon />}
+                        onClick={() => handleResumeCampaign(campaign.id)}
+                      >
+                        Resume
+                      </Button>
+                    )}
+
+                    {(campaign.status === "RUNNING" ||
+                      campaign.status === "PAUSED" ||
+                      campaign.status === "PENDING") && (
                       <Button
                         size="small"
                         color="secondary"
@@ -591,7 +651,8 @@ const BulkMessaging = () => {
                       </Button>
                     )}
 
-                    {(campaign.status === "COMPLETED" || campaign.status === "CANCELLED") && (
+                    {(campaign.status === "COMPLETED" ||
+                      campaign.status === "CANCELLED") && (
                       <Button
                         size="small"
                         color="secondary"
@@ -609,14 +670,18 @@ const BulkMessaging = () => {
         )}
 
         {/* Create Campaign Dialog */}
-        <Dialog 
-          open={createDialogOpen} 
+        <Dialog
+          open={createDialogOpen}
           onClose={handleCloseCreateDialog}
           maxWidth="md"
           fullWidth
         >
           <DialogTitle>
-            <Box display="flex" justifyContent="space-between" alignItems="center">
+            <Box
+              display="flex"
+              justifyContent="space-between"
+              alignItems="center"
+            >
               <Typography variant="h6">Create New Campaign</Typography>
               <Button
                 onClick={handleCloseCreateDialog}
@@ -627,7 +692,7 @@ const BulkMessaging = () => {
               </Button>
             </Box>
           </DialogTitle>
-          
+
           <DialogContent className={classes.dialogContent}>
             <Grid container spacing={3}>
               {/* Campaign Name */}
@@ -636,7 +701,7 @@ const BulkMessaging = () => {
                   fullWidth
                   label="Campaign Name"
                   value={campaignName}
-                  onChange={(e) => setCampaignName(e.target.value)}
+                  onChange={e => setCampaignName(e.target.value)}
                   variant="outlined"
                   required
                 />
@@ -650,11 +715,13 @@ const BulkMessaging = () => {
                   rows={4}
                   label="Message Text"
                   value={messageText}
-                  onChange={(e) => setMessageText(e.target.value)}
+                  onChange={e => setMessageText(e.target.value)}
                   variant="outlined"
                   helperText="Optional - Leave empty if sending only images"
                   InputProps={{
-                    startAdornment: <MessageIcon style={{ marginRight: 8, color: "#666" }} />
+                    startAdornment: (
+                      <MessageIcon style={{ marginRight: 8, color: "#666" }} />
+                    )
                   }}
                 />
               </Grid>
@@ -679,7 +746,7 @@ const BulkMessaging = () => {
                       Upload Image (Optional)
                     </Button>
                   </label>
-                  
+
                   {previewUrl && (
                     <Box className={classes.mediaPreview}>
                       <ImageIcon color="primary" />
@@ -708,16 +775,21 @@ const BulkMessaging = () => {
                   <Typography variant="h6" className={classes.sectionTitle}>
                     WhatsApp Connections
                   </Typography>
-                  <FormControl className={classes.formControl} variant="outlined">
+                  <FormControl
+                    className={classes.formControl}
+                    variant="outlined"
+                  >
                     <InputLabel>Select WhatsApp Connections *</InputLabel>
                     <Select
                       multiple
                       value={selectedWhatsapps}
-                      onChange={(e) => setSelectedWhatsapps(e.target.value)}
-                      renderValue={(selected) => (
+                      onChange={e => setSelectedWhatsapps(e.target.value)}
+                      renderValue={selected => (
                         <div className={classes.chips}>
-                          {selected.map((value) => {
-                            const whatsapp = whatsapps.find(w => w.id === value);
+                          {selected.map(value => {
+                            const whatsapp = whatsapps.find(
+                              w => w.id === value
+                            );
                             return (
                               <Chip
                                 key={value}
@@ -731,7 +803,7 @@ const BulkMessaging = () => {
                         </div>
                       )}
                     >
-                      {whatsapps.map((whatsapp) => (
+                      {whatsapps.map(whatsapp => (
                         <MenuItem key={whatsapp.id} value={whatsapp.id}>
                           {whatsapp.name} ({whatsapp.status})
                         </MenuItem>
@@ -747,12 +819,12 @@ const BulkMessaging = () => {
                   <Typography variant="h6" className={classes.sectionTitle}>
                     Target Audience
                   </Typography>
-                  
+
                   <FormControl component="fieldset">
                     <FormLabel component="legend">Send messages to:</FormLabel>
                     <RadioGroup
                       value={targetingMode}
-                      onChange={(e) => setTargetingMode(e.target.value)}
+                      onChange={e => setTargetingMode(e.target.value)}
                     >
                       <FormControlLabel
                         value="all"
@@ -768,22 +840,26 @@ const BulkMessaging = () => {
                   </FormControl>
 
                   {targetingMode === "tags" && (
-                    <FormControl className={classes.formControl} variant="outlined" style={{ marginTop: 16 }}>
+                    <FormControl
+                      className={classes.formControl}
+                      variant="outlined"
+                      style={{ marginTop: 16 }}
+                    >
                       <InputLabel>Select Tags</InputLabel>
                       <Select
                         multiple
                         value={selectedTags}
-                        onChange={(e) => setSelectedTags(e.target.value)}
-                        renderValue={(selected) => (
+                        onChange={e => setSelectedTags(e.target.value)}
+                        renderValue={selected => (
                           <div className={classes.chips}>
-                            {selected.map((value) => {
+                            {selected.map(value => {
                               const tag = tags.find(t => t.id === value);
                               return (
                                 <Chip
                                   key={value}
                                   label={tag?.name || value}
                                   className={classes.chip}
-                                  style={{ 
+                                  style={{
                                     backgroundColor: tag?.color || "#ccc",
                                     color: "#fff"
                                   }}
@@ -794,11 +870,11 @@ const BulkMessaging = () => {
                           </div>
                         )}
                       >
-                        {tags.map((tag) => (
+                        {tags.map(tag => (
                           <MenuItem key={tag.id} value={tag.id}>
                             <Chip
                               label={tag.name}
-                              style={{ 
+                              style={{
                                 backgroundColor: tag.color || "#ccc",
                                 color: "#fff"
                               }}
@@ -825,7 +901,7 @@ const BulkMessaging = () => {
                   <Typography variant="h6" className={classes.sectionTitle}>
                     Anti-Ban Settings
                   </Typography>
-                  
+
                   <Grid container spacing={2}>
                     <Grid item xs={12} sm={4}>
                       <TextField
@@ -833,31 +909,37 @@ const BulkMessaging = () => {
                         type="number"
                         label="Messages per Hour"
                         value={messagesPerHour}
-                        onChange={(e) => setMessagesPerHour(parseInt(e.target.value, 10) || 0)}
+                        onChange={e =>
+                          setMessagesPerHour(parseInt(e.target.value, 10) || 0)
+                        }
                         inputProps={{ min: 1, max: 100 }}
                         variant="outlined"
                       />
                     </Grid>
-                    
+
                     <Grid item xs={12} sm={4}>
                       <TextField
                         fullWidth
                         type="number"
                         label="Min Delay (seconds)"
                         value={minDelay}
-                        onChange={(e) => setMinDelay(parseInt(e.target.value, 10) || 0)}
+                        onChange={e =>
+                          setMinDelay(parseInt(e.target.value, 10) || 0)
+                        }
                         inputProps={{ min: 1 }}
                         variant="outlined"
                       />
                     </Grid>
-                    
+
                     <Grid item xs={12} sm={4}>
                       <TextField
                         fullWidth
                         type="number"
                         label="Max Delay (seconds)"
                         value={maxDelay}
-                        onChange={(e) => setMaxDelay(parseInt(e.target.value, 10) || 0)}
+                        onChange={e =>
+                          setMaxDelay(parseInt(e.target.value, 10) || 0)
+                        }
                         inputProps={{ min: minDelay + 1 }}
                         variant="outlined"
                       />
@@ -867,18 +949,17 @@ const BulkMessaging = () => {
               </Grid>
             </Grid>
           </DialogContent>
-          
+
           <DialogActions style={{ padding: 16 }}>
-            <Button
-              onClick={handleCloseCreateDialog}
-              color="default"
-            >
+            <Button onClick={handleCloseCreateDialog} color="default">
               Cancel
             </Button>
             <Button
               variant="contained"
               color="primary"
-              startIcon={loading ? <CircularProgress size={20} /> : <SendIcon />}
+              startIcon={
+                loading ? <CircularProgress size={20} /> : <SendIcon />
+              }
               onClick={handleCreateCampaign}
               disabled={loading}
             >
@@ -888,14 +969,18 @@ const BulkMessaging = () => {
         </Dialog>
 
         {/* Campaign Details Dialog */}
-        <Dialog 
-          open={detailsDialogOpen} 
+        <Dialog
+          open={detailsDialogOpen}
           onClose={handleCloseDetailsDialog}
           maxWidth="lg"
           fullWidth
         >
           <DialogTitle>
-            <Box display="flex" justifyContent="space-between" alignItems="center">
+            <Box
+              display="flex"
+              justifyContent="space-between"
+              alignItems="center"
+            >
               <Typography variant="h6">
                 Campaign Details: {selectedCampaign?.name}
               </Typography>
@@ -908,7 +993,7 @@ const BulkMessaging = () => {
               </Button>
             </Box>
           </DialogTitle>
-          
+
           <DialogContent>
             {campaignDetails && (
               <Grid container spacing={3}>
@@ -916,77 +1001,108 @@ const BulkMessaging = () => {
                 <Grid item xs={12}>
                   <Card>
                     <CardContent>
-                      <Typography variant="h6" gutterBottom>Campaign Summary</Typography>
+                      <Typography variant="h6" gutterBottom>
+                        Campaign Summary
+                      </Typography>
                       <Grid container spacing={2}>
                         <Grid item xs={6} sm={3}>
-                          <Typography variant="body2" color="textSecondary">Status</Typography>
-                          <Chip 
-                            label={campaignDetails.status} 
+                          <Typography variant="body2" color="textSecondary">
+                            Status
+                          </Typography>
+                          <Chip
+                            label={campaignDetails.status}
                             color={getStatusColor(campaignDetails.status)}
                             size="small"
                           />
                         </Grid>
                         <Grid item xs={6} sm={3}>
-                          <Typography variant="body2" color="textSecondary">Total Contacts</Typography>
-                          <Typography variant="h6">{campaignDetails.totalContacts}</Typography>
+                          <Typography variant="body2" color="textSecondary">
+                            Total Contacts
+                          </Typography>
+                          <Typography variant="h6">
+                            {campaignDetails.totalContacts}
+                          </Typography>
                         </Grid>
                         <Grid item xs={6} sm={3}>
-                          <Typography variant="body2" color="textSecondary">Messages Sent</Typography>
-                          <Typography variant="h6" color="primary">{campaignDetails.sentCount}</Typography>
+                          <Typography variant="body2" color="textSecondary">
+                            Messages Sent
+                          </Typography>
+                          <Typography variant="h6" color="primary">
+                            {campaignDetails.sentCount}
+                          </Typography>
                         </Grid>
                         <Grid item xs={6} sm={3}>
-                          <Typography variant="body2" color="textSecondary">Failed</Typography>
-                          <Typography variant="h6" color="error">{campaignDetails.failedCount}</Typography>
+                          <Typography variant="body2" color="textSecondary">
+                            Failed
+                          </Typography>
+                          <Typography variant="h6" color="error">
+                            {campaignDetails.failedCount}
+                          </Typography>
                         </Grid>
                       </Grid>
-                      
+
                       <Box mt={2}>
-                        <Typography variant="body2" color="textSecondary">Progress</Typography>
+                        <Typography variant="body2" color="textSecondary">
+                          Progress
+                        </Typography>
                         <LinearProgress
                           variant="determinate"
-                          value={campaignDetails.totalContacts > 0 ? (campaignDetails.sentCount / campaignDetails.totalContacts) * 100 : 0}
+                          value={
+                            campaignDetails.totalContacts > 0
+                              ? (campaignDetails.sentCount /
+                                  campaignDetails.totalContacts) *
+                                100
+                              : 0
+                          }
                           style={{ marginTop: 8 }}
                         />
                       </Box>
-                      
+
                       {campaignDetails.message && (
                         <Box mt={2}>
-                          <Typography variant="body2" color="textSecondary">Message</Typography>
-                          <Typography variant="body1" style={{ 
-                            backgroundColor: '#f5f5f5', 
-                            color: '#333',
-                            padding: 8, 
-                            borderRadius: 4,
-                            marginTop: 4,
-                            border: '1px solid #ddd'
-                          }}>
+                          <Typography variant="body2" color="textSecondary">
+                            Message
+                          </Typography>
+                          <Typography
+                            variant="body1"
+                            style={{
+                              backgroundColor: "#f5f5f5",
+                              color: "#333",
+                              padding: 8,
+                              borderRadius: 4,
+                              marginTop: 4,
+                              border: "1px solid #ddd"
+                            }}
+                          >
                             {campaignDetails.message}
                           </Typography>
                         </Box>
                       )}
-                      
+
                       {campaignDetails.mediaPath && (
                         <Box mt={2}>
-                          <Typography variant="body2" color="textSecondary">Sent Image</Typography>
+                          <Typography variant="body2" color="textSecondary">
+                            Sent Image
+                          </Typography>
                           <Box mt={1}>
                             <img
                               src={`${getBackendURL()}/public/${campaignDetails.mediaPath}`}
                               alt="Campaign media"
                               style={{
-                                maxWidth: '100%',
+                                maxWidth: "100%",
                                 maxHeight: 200,
                                 borderRadius: 4,
-                                border: '1px solid #ddd'
+                                border: "1px solid #ddd"
                               }}
-                              onError={(e) => {
-                                e.target.style.display = 'none';
-                                e.target.nextSibling.style.display = 'block';
+                              onError={e => {
+                                e.target.style.display = "none";
+                                e.target.nextSibling.style.display = "block";
                               }}
                             />
-                            <Typography 
-                              variant="body2" 
+                            <Typography
+                              variant="body2"
                               color="textSecondary"
-                              style={{ display: 'none', marginTop: 8 }}
+                              style={{ display: "none", marginTop: 8 }}
                             >
                               Image not available
                             </Typography>
@@ -1001,26 +1117,36 @@ const BulkMessaging = () => {
                 <Grid item xs={12}>
                   <Card>
                     <CardContent>
-                      <Typography variant="h6" gutterBottom>Message Details</Typography>
-                      <Box style={{ maxHeight: 400, overflowY: 'auto' }}>
+                      <Typography variant="h6" gutterBottom>
+                        Message Details
+                      </Typography>
+                      <Box style={{ maxHeight: 400, overflowY: "auto" }}>
                         {campaignDetails.messages.map((message, index) => (
-                          <Box 
-                            key={message.id} 
-                            display="flex" 
-                            justifyContent="space-between" 
+                          <Box
+                            key={message.id}
+                            display="flex"
+                            justifyContent="space-between"
                             alignItems="center"
                             p={1}
-                            style={{ 
-                              borderBottom: index < campaignDetails.messages.length - 1 ? '1px solid #eee' : 'none'
+                            style={{
+                              borderBottom:
+                                index < campaignDetails.messages.length - 1
+                                  ? "1px solid #eee"
+                                  : "none"
                             }}
                           >
                             <Box>
                               <Typography variant="body2">
-                                {message.contact?.name} ({message.contact?.number})
+                                {message.contact?.name} (
+                                {message.contact?.number})
                               </Typography>
                               {message.sentAt && (
-                                <Typography variant="caption" color="textSecondary">
-                                  Sent: {new Date(message.sentAt).toLocaleString()}
+                                <Typography
+                                  variant="caption"
+                                  color="textSecondary"
+                                >
+                                  Sent:{" "}
+                                  {new Date(message.sentAt).toLocaleString()}
                                 </Typography>
                               )}
                               {message.errorMessage && (
@@ -1029,12 +1155,15 @@ const BulkMessaging = () => {
                                 </Typography>
                               )}
                             </Box>
-                            <Chip 
-                              label={message.status} 
+                            <Chip
+                              label={message.status}
                               size="small"
                               color={
-                                message.status === 'SENT' ? 'primary' : 
-                                message.status === 'FAILED' ? 'secondary' : 'default'
+                                message.status === "SENT"
+                                  ? "primary"
+                                  : message.status === "FAILED"
+                                    ? "secondary"
+                                    : "default"
                               }
                             />
                           </Box>
@@ -1046,7 +1175,7 @@ const BulkMessaging = () => {
               </Grid>
             )}
           </DialogContent>
-          
+
           <DialogActions>
             <Button onClick={handleCloseDetailsDialog} color="primary">
               Close
