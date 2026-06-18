@@ -26,6 +26,7 @@ type StoreData = {
   contactListId: number;
   companyId?: string;
   email?: string;
+  tags?: string;
 };
 
 type FindParams = {

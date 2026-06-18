@@ -352,6 +352,7 @@ export const initWASocket = async (
 
         wsocket.ev.on(
           "connection.update",
+          // @ts-ignore — libzapitu-rf adds reachoutTimeLock at runtime; type defs may lag.
           async ({ connection, lastDisconnect, qr, reachoutTimeLock }) => {
             if (reachoutTimeLock) {
               handleReachoutTimelock(reachoutTimeLock, { reachoutTimeLock });
@@ -424,11 +425,13 @@ export const initWASocket = async (
             }
 
             if (connection === "open") {
-              wsocket.fetchAccountReachoutTimelock().then(timelock => {
+              // @ts-ignore — libzapitu-rf adds these methods at runtime; type defs may lag.
+              wsocket.fetchAccountReachoutTimelock().then((timelock: any) => {
                 handleReachoutTimelock(timelock, { timelock });
               });
 
-              wsocket.fetchNewChatMessageCap().then(cap => {
+              // @ts-ignore — libzapitu-rf adds these methods at runtime; type defs may lag.
+              wsocket.fetchNewChatMessageCap().then((cap: any) => {
                 logger.debug({ cap }, "Fetched new chat message cap");
               });
 

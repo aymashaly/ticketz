@@ -255,6 +255,7 @@ const messages = {
           name: "Name",
           number: "WhatsApp Number",
           email: "Email",
+          tags: "Tags (comma-separated)",
           extraName: "Field Name",
           extraValue: "Value",
           disableBot: "Disable chatbot"
@@ -582,6 +583,7 @@ const messages = {
           number: "Number",
           whatsapp: "WhatsApp",
           email: "Email",
+          tags: "Tags",
           okEdit: "Edit",
           okAdd: "Add",
           add: "Add",
@@ -593,6 +595,7 @@ const messages = {
           number: "Number",
           whatsapp: "WhatsApp",
           email: "Email",
+          tags: "Tags",
           actions: "Actions"
         },
         confirmationModal: {

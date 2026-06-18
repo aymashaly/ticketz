@@ -250,12 +250,13 @@ const messages = {
           edit: "Editar contato"
         },
         form: {
-          mainInfo: "Dados do contato",
-          extraInfo: "Informações adicionais",
+          mainInfo: "Informações do Contato",
+          extraInfo: "Informações Adicionais",
           name: "Nome",
-          number: "Número do Whatsapp",
-          email: "Email",
-          extraName: "Nome do campo",
+          number: "Número do WhatsApp",
+          email: "E-mail",
+          tags: "Etiquetas (separadas por vírgula)",
+          extraName: "Nome do Campo",
           extraValue: "Valor",
           disableBot: "Desabilitar chatbot"
         },
@@ -582,6 +583,7 @@ const messages = {
           number: "Número",
           whatsapp: "Whatsapp",
           email: "E-mail",
+          tags: "Etiquetas",
           okEdit: "Editar",
           okAdd: "Adicionar",
           add: "Adicionar",
@@ -593,6 +595,7 @@ const messages = {
           number: "Número",
           whatsapp: "Whatsapp",
           email: "E-mail",
+          tags: "Etiquetas",
           actions: "Ações"
         },
         confirmationModal: {

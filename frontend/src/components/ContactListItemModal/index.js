@@ -79,7 +79,8 @@ const ContactListItemModal = ({
   const initialState = {
     name: "",
     number: "",
-    email: ""
+    email: "",
+    tags: ""
   };
 
   const [contact, setContact] = useState(initialState);
@@ -198,6 +199,19 @@ const ContactListItemModal = ({
                     error={touched.email && Boolean(errors.email)}
                     helperText={touched.email && errors.email}
                     placeholder="Email address"
+                    fullWidth
+                    margin="dense"
+                    variant="outlined"
+                  />
+                </div>
+                <div>
+                  <Field
+                    as={TextField}
+                    label={i18n.t("contactModal.form.tags")}
+                    name="tags"
+                    error={touched.tags && Boolean(errors.tags)}
+                    helperText={touched.tags && errors.tags}
+                    placeholder="vip, patient, follow-up"
                     fullWidth
                     margin="dense"
                     variant="outlined"

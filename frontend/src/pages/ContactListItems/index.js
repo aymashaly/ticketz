@@ -26,6 +26,7 @@ import DeleteOutlineIcon from "@material-ui/icons/DeleteOutline";
 import EditIcon from "@material-ui/icons/Edit";
 import CheckCircleIcon from "@material-ui/icons/CheckCircle";
 import BlockIcon from "@material-ui/icons/Block";
+import Chip from "@material-ui/core/Chip";
 
 import api from "../../services/api";
 import TableRowSkeleton from "../../components/TableRowSkeleton";
@@ -377,6 +378,9 @@ const ContactListItems = () => {
                 {i18n.t("contactListItems.table.email")}
               </TableCell>
               <TableCell align="center">
+                {i18n.t("contactListItems.table.tags")}
+              </TableCell>
+              <TableCell align="center">
                 {i18n.t("contactListItems.table.actions")}
               </TableCell>
             </TableRow>
@@ -403,6 +407,27 @@ const ContactListItems = () => {
                   <TableCell>{contact.name}</TableCell>
                   <TableCell align="center">{contact.number}</TableCell>
                   <TableCell align="center">{contact.email}</TableCell>
+                  <TableCell align="center">
+                    {contact.tags ? (
+                      <div style={{ display: "flex", flexWrap: "wrap", gap: 4, justifyContent: "center" }}>
+                        {String(contact.tags)
+                          .split(",")
+                          .map(t => t.trim())
+                          .filter(Boolean)
+                          .map((tag, i) => (
+                            <Chip
+                              key={`${contact.id}-${i}`}
+                              label={tag}
+                              size="small"
+                              variant="outlined"
+                              color="primary"
+                            />
+                          ))}
+                      </div>
+                    ) : (
+                      ""
+                    )}
+                  </TableCell>
                   <TableCell align="center">
                     <IconButton
                       size="small"
