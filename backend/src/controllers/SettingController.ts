@@ -6,6 +6,7 @@ import UpdateSettingService from "../services/SettingServices/UpdateSettingServi
 import ListSettingsService from "../services/SettingServices/ListSettingsService";
 import GetPublicSettingService from "../services/SettingServices/GetPublicSettingService";
 import { GetSettingService } from "../services/SettingServices/GetSettingService";
+import { triggerGracefulShutdown } from "../utils/shutdown";
 
 type LogoRequest = {
   mode: string;
@@ -91,6 +92,21 @@ export const storeLogo = async (
   }
 
   return res.status(406);
+};
+
+export const restart = async (
+  _req: Request,
+  res: Response
+): Promise<Response> => {
+  res.status(200).json({ message: "Server restarting..." });
+
+  // Delay shutdown so the response can be sent before the process exits.
+  // The Docker container will restart the process automatically.
+  setTimeout(() => {
+    triggerGracefulShutdown();
+  }, 500);
+
+  return res;
 };
 
 export const storePrivateFile = async (

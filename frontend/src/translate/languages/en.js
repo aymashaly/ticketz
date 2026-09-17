@@ -56,6 +56,7 @@ const messages = {
           invalidEmail: "Invalid email",
           invalidPhone: "Invalid phone number"
         },
+        status: "Status",
         serverTime: "Server time:",
         clientTime: "Client time:",
         differenceMinutes: "Difference: {{count}} minute(s)"
@@ -95,6 +96,41 @@ const messages = {
           token: "Token",
           submit: "Register",
           success: "Company created successfully!"
+        }
+      },
+      companiesManager: {
+        form: {
+          campaigns: "Campaigns",
+          recurrence: "Recurrence",
+          monthly: "Monthly",
+          bimonthly: "Bimonthly",
+          quarterly: "Quarterly",
+          semiannual: "Semiannual",
+          annual: "Annual"
+        },
+        buttons: {
+          clear: "Clear",
+          accessAs: "Access as",
+          incrementDueDate: "+ Due Date",
+          user: "User"
+        },
+        table: {
+          campaigns: "Campaigns",
+          createdAt: "Created At"
+        },
+        toasts: {
+          loadError: "Could not load the record list",
+          operationSuccess: "Operation completed successfully",
+          operationError: "Could not perform the operation",
+          operationErrorDuplicate:
+            "Could not perform the operation. Check if a company with the same name already exists or if the fields were filled correctly"
+        },
+        confirmationModal: {
+          deleteTitle: "Delete Record",
+          deleteMessage: "Do you really want to delete this record?",
+          impersonateTitle: "Access as",
+          impersonateMessage:
+            "Do you want to access the system as this company?"
         }
       },
       auth: {
@@ -183,11 +219,17 @@ const messages = {
             content:
               "Make sure your phone is connected to the internet and WhatsApp is open, or click 'Disconnect' to get a new QR Code."
           },
+          passkey: {
+            title: "Passkey authentication required",
+            content:
+              "Click the passkey button and use the browser extension to capture the authenticated WhatsApp Web session."
+          },
           refresh: "Refresh",
           disconnect: "Disconnect",
           scan: "Scan QR Code",
           newQr: "Request new QR Code",
-          retry: "Try Again"
+          retry: "Try Again",
+          resetPasskey: "Reset passkey session"
         },
         table: {
           name: "Name",
@@ -218,7 +260,41 @@ const messages = {
         success: "WhatsApp saved successfully."
       },
       qrCode: {
-        message: "Scan the QR Code to start the session"
+        message: "Scan the QR Code to start the session",
+        extensionHint: "Authenticate through WhatsApp Web",
+        startCapture: "Capture WhatsApp Web session",
+        installExtension: "Install Capture Extension"
+      },
+      passkeyModal: {
+        title: "Capture WhatsApp Web Extension",
+        instructions:
+          "Use the browser extension to capture the authenticated WhatsApp Web session and send it to the server.",
+        connectorNotFound:
+          "Extension not detected. Install the passkey capture extension and reload the page.",
+        connectorReady:
+          "Extension detected. Click below to authenticate through WhatsApp Web.",
+        startCapture: "Start Capture",
+        waitingForCapture: "Waiting for WhatsApp Web session capture…",
+        existingSession: "WhatsApp Web already has a session for {{number}}.",
+        captureExisting: "Capture this session",
+        clearAndContinue: "Clear local session and continue",
+        importSent: "Session captured and sent successfully.",
+        importError: "Capture failed: {{reason}}.",
+        missingToken: "Capture token is missing. Please reload the page.",
+        downloadExtension: "Download capture extension",
+        installInstructions: "How to install",
+        hideInstructions: "Hide instructions",
+        instructionsIntro: "Follow the steps below to install the extension:",
+        installStep1: "Download the extension ZIP file.",
+        installStep2: "Extract the ZIP file to a folder on your computer.",
+        installStep3: "Open Google Chrome and go to chrome://extensions/.",
+        installStep4:
+          "Enable Developer mode using the toggle in the top-right corner.",
+        installStep5: 'Click "Load unpacked".',
+        installStep6:
+          "Select the extracted folder containing the extension files.",
+        installStep7: "The extension is now installed and ready to use.",
+        installStep8: "Refresh this page with F5 and try to connect again."
       },
       contacts: {
         title: "Contacts",
@@ -850,9 +926,25 @@ const messages = {
         backgroundContent: "Login background content",
         backgroundContentHint:
           "Supports images, SVG files, and MP4 videos for the login screen background.",
-        noFileSelected: "No file selected yet."
+        noFileSelected: "No file selected yet.",
+        buildExtension: "Build WA Session Capture extension",
+        buildingExtension: "Building extension…",
+        downloadExtension: "Download extension",
+        extensionHint:
+          "Builds a whitelabeled Chrome extension. The downloaded ZIP already contains the extension files: extract it and load the extracted folder as an unpacked extension.",
+        extensionBuildStarted:
+          "Extension build started. You will be notified when it is ready.",
+        extensionBuildFailed: "Could not start the extension build.",
+        extensionBuilt: "Extension built successfully.",
+        extensionBuildUnknownError: "Unknown build error."
       },
       settings: {
+        restartBackend: {
+          button: "Restart Backend",
+          restarting: "Restarting…",
+          success: "Backend restart initiated.",
+          error: "Failed to restart backend."
+        },
         group: {
           general: "General",
           timeouts: "Timeouts",
@@ -955,6 +1047,13 @@ const messages = {
             disabled: "disabled"
           }
         },
+        MultiThreadedWbot: {
+          title: "Multithreaded WhatsApp Worker",
+          options: {
+            enabled: "Enabled",
+            disabled: "Disabled"
+          }
+        },
         FileUploadLimit: {
           title: "File Upload Limit (MB)"
         },
@@ -1037,6 +1136,65 @@ const messages = {
             contact: "Contact",
             both: "Ticket and Contact"
           }
+        },
+        docker: {
+          title: "Docker Containers",
+          description:
+            "Manage the server containers: check for image updates, pull+restart or restart.",
+          selfBadge: "this backend",
+          notChecked: "Not checked",
+          updateAvailable: "Update available",
+          upToDate: "Up to date",
+          unavailable: "Unavailable",
+          unavailableMessage:
+            "Docker service unavailable on this server. Check if the Docker socket is mounted in the backend container.",
+          columns: {
+            name: "Name",
+            image: "Image",
+            state: "State",
+            created: "Created",
+            update: "Update",
+            actions: "Actions"
+          },
+          actions: {
+            refreshList: "Refresh list",
+            checkUpdates: "Check for updates",
+            checkUpdate: "Check for update",
+            updateBackendFrontend: "Update backend & frontend",
+            updatingBackendFrontend: "Updating backend & frontend...",
+            update: "Pull + restart",
+            restart: "Restart"
+          },
+          toasts: {
+            updateAvailable: "Update available for {{name}}",
+            selfUpdate:
+              "The backend is being updated and will restart. Wait a few moments and reload the page.",
+            selfRestart:
+              "The backend is restarting. Wait a few moments and reload the page.",
+            restarted: "{{name}} restarted",
+            noUpdates: "No updates available."
+          },
+          confirm: {
+            updateTitle: "Update {{name}}",
+            updateAllTitle: "Update backend & frontend",
+            updateAllBody:
+              "Backend and frontend containers will be updated (pull + recreate). The backend container will restart and the application will be unavailable for a few moments. Do you want to continue?",
+            restartTitle: "Restart {{name}}",
+            updateBody:
+              'The image "{{image}}" will be pulled and the container will be recreated with the new version. Do you want to continue?',
+            restartBody:
+              'The container "{{name}}" will be restarted. Do you want to continue?',
+            selfWarning:
+              "This is the backend container: the application will be unavailable for a few moments."
+          },
+          dashboardBanner: {
+            title: "Container updates available",
+            description: "Backend and/or frontend image updates are available.",
+            updateAll: "Update backend & frontend",
+            updating: "Updating...",
+            confirmBody:
+              "Backend and frontend containers will be updated (pull + recreate). The backend container will restart and the application will be unavailable for about 1 minute. Do you want to continue?"
+          }
         }
       },
       messagesList: {
@@ -1050,7 +1208,8 @@ const messages = {
             call: "Call",
             endCall: "End Call"
           }
-        }
+        },
+        openPaymentLink: "Open payment link"
       },
       messagesInput: {
         placeholderOpen: "Type a message",
@@ -1160,6 +1319,7 @@ const messages = {
           "Backend is starting up and not ready yet. Retrying automatically."
       },
       backendErrors: {
+        ERR_INTERNAL: "Internal server error. Please contact support.",
         ERR_UNAUTHORIZED: "You are not authorized to perform this action.",
         ERR_FORBIDDEN: "You do not have permission to access this resource.",
         ERR_CHECK_NUMBER: "Check the number and try again.",

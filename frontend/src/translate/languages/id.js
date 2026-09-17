@@ -20,6 +20,7 @@ const messages = {
         connection: "Koneksi",
         queue: "Antrian",
         contact: "Kontak",
+        status: "Status",
         serverTime: "Waktu server:",
         clientTime: "Waktu klien:",
         differenceMinutes: "Selisih: {{count}} menit"
@@ -59,6 +60,41 @@ const messages = {
           token: "Token",
           submit: "Daftar",
           success: "Perusahaan berhasil dibuat!"
+        }
+      },
+      companiesManager: {
+        form: {
+          campaigns: "Kampanye",
+          recurrence: "Berulang",
+          monthly: "Bulanan",
+          bimonthly: "Dua bulanan",
+          quarterly: "Tiga bulanan",
+          semiannual: "Enam bulanan",
+          annual: "Tahunan"
+        },
+        buttons: {
+          clear: "Bersihkan",
+          accessAs: "Akses sebagai",
+          incrementDueDate: "+ Jatuh Tempo",
+          user: "Pengguna"
+        },
+        table: {
+          campaigns: "Kampanye",
+          createdAt: "Dibuat pada"
+        },
+        toasts: {
+          loadError: "Tidak dapat memuat daftar rekaman",
+          operationSuccess: "Operasi berhasil dilakukan",
+          operationError: "Tidak dapat melakukan operasi",
+          operationErrorDuplicate:
+            "Tidak dapat melakukan operasi. Periksa apakah sudah ada perusahaan dengan nama yang sama atau apakah kolom telah diisi dengan benar"
+        },
+        confirmationModal: {
+          deleteTitle: "Hapus Rekaman",
+          deleteMessage: "Apakah Anda yakin ingin menghapus rekaman ini?",
+          impersonateTitle: "Akses sebagai",
+          impersonateMessage:
+            "Apakah Anda ingin mengakses sistem sebagai perusahaan ini?"
         }
       },
       auth: {
@@ -125,6 +161,11 @@ const messages = {
             content:
               "Pastikan ponsel Anda terhubung ke internet dan WhatsApp terbuka, atau klik 'Putuskan' untuk mendapatkan Kode QR baru."
           },
+          passkey: {
+            title: "Passkey authentication required",
+            content:
+              "Click the passkey button and use the browser extension to capture the authenticated WhatsApp Web session."
+          },
           refresh: "Muat ulang",
           disconnect: "Putuskan",
           scan: "Pindai",
@@ -160,7 +201,42 @@ const messages = {
         success: "WhatsApp berhasil disimpan."
       },
       qrCode: {
-        message: "Pindai Kode QR untuk memulai sesi"
+        message: "Pindai Kode QR untuk memulai sesi",
+        extensionHint: "Autentikasi melalui WhatsApp Web",
+        startCapture: "Tangkap sesi WhatsApp Web",
+        installExtension: "Pasang Ekstensi Tangkap"
+      },
+      passkeyModal: {
+        title: "Ekstensi Tangkap WhatsApp Web",
+        instructions:
+          "Use the browser extension to capture the authenticated WhatsApp Web session and send it to the server.",
+        connectorNotFound:
+          "Extension not detected. Install the passkey capture extension and reload the page.",
+        connectorReady:
+          "Ekstensi terdeteksi. Klik di bawah untuk mengautentikasi melalui WhatsApp Web.",
+        startCapture: "Start Capture",
+        waitingForCapture: "Waiting for WhatsApp Web session capture…",
+        existingSession: "WhatsApp Web already has a session for {{number}}.",
+        captureExisting: "Capture this session",
+        clearAndContinue: "Clear local session and continue",
+        importSent: "Session captured and sent successfully.",
+        importError: "Capture failed: {{reason}}.",
+        missingToken: "Capture token is missing. Please reload the page.",
+        downloadExtension: "Unduh ekstensi penangkapan",
+        installInstructions: "Cara memasang",
+        hideInstructions: "Sembunyikan instruksi",
+        instructionsIntro:
+          "Ikuti langkah-langkah di bawah ini untuk memasang ekstensi:",
+        installStep1: "Unduh file ZIP ekstensi.",
+        installStep2: "Ekstrak file ZIP ke folder di komputer Anda.",
+        installStep3: "Buka Google Chrome dan akses chrome://extensions/.",
+        installStep4:
+          "Aktifkan Mode pengembang dengan tombol di sudut kanan atas.",
+        installStep5: 'Klik "Muat yang tidak dipaketkan".',
+        installStep6: "Pilih folder hasil ekstraksi yang berisi file ekstensi.",
+        installStep7: "Ekstensi telah terpasang dan siap digunakan.",
+        installStep8:
+          "Segarkan halaman ini dengan F5 dan coba hubungkan kembali."
       },
       contacts: {
         title: "Kontak",
@@ -792,9 +868,25 @@ const messages = {
         backgroundContent: "Konten latar login",
         backgroundContentHint:
           "Mendukung gambar, file SVG, dan video MP4 untuk latar layar login.",
-        noFileSelected: "Belum ada file yang dipilih."
+        noFileSelected: "Belum ada file yang dipilih.",
+        buildExtension: "Bangun ekstensi WA Session Capture",
+        buildingExtension: "Membangun ekstensi…",
+        downloadExtension: "Unduh ekstensi",
+        extensionHint:
+          "Membangun ekstensi Chrome whitelabel. File ZIP yang diunduh sudah berisi file ekstensi: ekstrak dan muat folder hasil ekstraksi sebagai ekstensi yang tidak dipaketkan.",
+        extensionBuildStarted:
+          "Pembangunan ekstensi dimulai. Anda akan diberitahu saat sudah siap.",
+        extensionBuildFailed: "Tidak dapat memulai pembangunan ekstensi.",
+        extensionBuilt: "Ekstensi berhasil dibangun.",
+        extensionBuildUnknownError: "Kesalahan build tidak diketahui."
       },
       settings: {
+        restartBackend: {
+          button: "Mulai Ulang Backend",
+          restarting: "Memulai ulang…",
+          success: "Mulai ulang backend dimulai.",
+          error: "Gagal memulai ulang backend."
+        },
         group: {
           general: "Umum",
           timeouts: "Waktu habis",
@@ -887,6 +979,13 @@ const messages = {
             disabled: "Dinonaktifkan"
           }
         },
+        MultiThreadedWbot: {
+          title: "Worker WhatsApp Multithread",
+          options: {
+            enabled: "Diaktifkan",
+            disabled: "Dinonaktifkan"
+          }
+        },
         FileDownloadLimit: {
           title: "Batas unduhan file (MB)"
         },
@@ -946,6 +1045,64 @@ const messages = {
         },
         i18nSettings: {
           title: "Terjemahan"
+        },
+        docker: {
+          title: "Kontainer Docker",
+          description:
+            "Kelola kontainer server: periksa pembaruan gambar, pull+mulai ulang atau mulai ulang.",
+          selfBadge: "backend ini",
+          notChecked: "Belum diperiksa",
+          updateAvailable: "Pembaruan tersedia",
+          upToDate: "Terbaru",
+          unavailable: "Tidak tersedia",
+          unavailableMessage:
+            "Layanan Docker tidak tersedia di server ini. Periksa apakah soket Docker terpasang di kontainer backend.",
+          columns: {
+            name: "Nama",
+            image: "Gambar",
+            state: "Status",
+            created: "Dibuat",
+            update: "Pembaruan",
+            actions: "Aksi"
+          },
+          actions: {
+            refreshList: "Muat ulang daftar",
+            checkUpdates: "Periksa pembaruan",
+            checkUpdate: "Periksa pembaruan",
+            updateBackendFrontend: "Perbarui backend & frontend",
+            updatingBackendFrontend: "Memperbarui backend & frontend...",
+            update: "Pull + mulai ulang",
+            restart: "Mulai ulang"
+          },
+          toasts: {
+            updateAvailable: "Pembaruan tersedia untuk {{name}}",
+            selfUpdate:
+              "Backend sedang diperbarui dan akan dimulai ulang. Tunggu beberapa saat dan muat ulang halaman.",
+            selfRestart:
+              "Backend sedang dimulai ulang. Tunggu beberapa saat dan muat ulang halaman.",
+            restarted: "{{name}} dimulai ulang",
+            noUpdates: "Tidak ada pembaruan yang tersedia."
+          },
+          confirm: {
+            updateTitle: "Perbarui {{name}}",
+            updateAllTitle: "Perbarui backend & frontend",
+            updateAllBody:
+              "Kontainer backend dan frontend akan diperbarui (pull + buat ulang). Kontainer backend akan dimulai ulang dan aplikasi akan tidak tersedia selama beberapa saat. Lanjutkan?",
+            restartTitle: "Mulai ulang {{name}}",
+            updateBody:
+              'Gambar "{{image}}" akan di-pull dan kontainer akan dibuat ulang dengan versi baru. Lanjutkan?',
+            restartBody: 'Kontainer "{{name}}" akan dimulai ulang. Lanjutkan?',
+            selfWarning:
+              "Ini adalah kontainer backend: aplikasi akan tidak tersedia selama beberapa saat."
+          },
+          dashboardBanner: {
+            title: "Pembaruan kontainer tersedia",
+            description: "Pembaruan gambar backend dan/atau frontend tersedia.",
+            updateAll: "Perbarui backend & frontend",
+            updating: "Memperbarui...",
+            confirmBody:
+              "Kontainer backend dan frontend akan diperbarui (pull + buat ulang). Kontainer backend akan dimulai ulang dan aplikasi akan tidak tersedia selama sekitar 1 menit. Lanjutkan?"
+          }
         }
       },
       messagesList: {
@@ -957,7 +1114,8 @@ const messages = {
             reopen: "Buka Kembali",
             accept: "Terima"
           }
-        }
+        },
+        openPaymentLink: "Buka tautan pembayaran"
       },
       messagesInput: {
         placeholderOpen: "Ketik pesan",
@@ -1065,6 +1223,7 @@ const messages = {
           "Backend sedang memulai dan belum siap. Mencoba lagi secara otomatis."
       },
       backendErrors: {
+        ERR_INTERNAL: "Kesalahan internal server. Silakan hubungi dukungan.",
         ERR_FORBIDDEN: "Akses ditolak. Periksa izin Anda.",
         ERR_CHECK_NUMBER: "Nomor ini tidak terdaftar di WhatsApp.",
         ERR_NO_OTHER_WHATSAPP: "Harus ada setidaknya satu WhatsApp default.",

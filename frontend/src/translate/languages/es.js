@@ -56,6 +56,7 @@ const messages = {
           invalidEmail: "Correo electrónico inválido",
           invalidPhone: "Número de teléfono inválido"
         },
+        status: "Estado",
         serverTime: "Hora del servidor:",
         clientTime: "Hora del cliente:",
         differenceMinutes: "Diferencia: {{count}} minuto(s)"
@@ -95,6 +96,40 @@ const messages = {
           token: "Token",
           submit: "Registrar",
           success: "Empresa creada con éxito"
+        }
+      },
+      companiesManager: {
+        form: {
+          campaigns: "Campañas",
+          recurrence: "Recurrencia",
+          monthly: "Mensual",
+          bimonthly: "Bimestral",
+          quarterly: "Trimestral",
+          semiannual: "Semestral",
+          annual: "Anual"
+        },
+        buttons: {
+          clear: "Limpiar",
+          accessAs: "Acceder como",
+          incrementDueDate: "+ Vencimiento",
+          user: "Usuario"
+        },
+        table: {
+          campaigns: "Campañas",
+          createdAt: "Creada el"
+        },
+        toasts: {
+          loadError: "No se pudo cargar la lista de registros",
+          operationSuccess: "Operación realizada con éxito",
+          operationError: "No se pudo realizar la operación",
+          operationErrorDuplicate:
+            "No se pudo realizar la operación. Verifique si ya existe una empresa con el mismo nombre o si los campos fueron completados correctamente"
+        },
+        confirmationModal: {
+          deleteTitle: "Eliminación de Registro",
+          deleteMessage: "¿Realmente desea eliminar este registro?",
+          impersonateTitle: "Acceder como",
+          impersonateMessage: "¿Desea acceder al sistema como esta empresa?"
         }
       },
       auth: {
@@ -182,11 +217,17 @@ const messages = {
             content:
               "Asegúrate de que tu teléfono esté conectado a internet y WhatsApp esté abierto, o haz clic en 'Desconectar' para obtener un nuevo código QR."
           },
+          passkey: {
+            title: "Se requiere autenticación por passkey",
+            content:
+              "Haz clic en el botón de passkey y usa la extensión del navegador para capturar la sesión autenticada de WhatsApp Web."
+          },
           refresh: "Actualizar",
           disconnect: "Desconectar",
           scan: "Escanear",
           newQr: "Nuevo Código QR",
-          retry: "Intentar nuevamente"
+          retry: "Intentar nuevamente",
+          resetPasskey: "Restablecer sesión passkey"
         },
         table: {
           name: "Nombre",
@@ -217,7 +258,44 @@ const messages = {
         success: "WhatsApp guardado con éxito."
       },
       qrCode: {
-        message: "Lee el código QR para iniciar la sesión"
+        message: "Lee el código QR para iniciar la sesión",
+        extensionHint: "Autenticar a través de WhatsApp Web",
+        startCapture: "Capturar sesión de WhatsApp Web",
+        installExtension: "Instalar Extensión de Captura"
+      },
+      passkeyModal: {
+        title: "Extensión de Captura de WhatsApp Web",
+        instructions:
+          "Usa la extensión del navegador para capturar la sesión autenticada de WhatsApp Web y enviarla al servidor.",
+        connectorNotFound:
+          "Extensión no detectada. Instala la extensión de captura passkey y recarga la página.",
+        connectorReady:
+          "Extensión detectada. Haz clic abajo para autenticarte a través de WhatsApp Web.",
+        startCapture: "Iniciar Captura",
+        waitingForCapture: "Esperando la captura de la sesión de WhatsApp Web…",
+        existingSession: "WhatsApp Web ya tiene una sesión para {{number}}.",
+        captureExisting: "Capturar esta sesión",
+        clearAndContinue: "Borrar sesión local y continuar",
+        importSent: "Sesión capturada y enviada con éxito.",
+        importError: "Error en la captura: {{reason}}.",
+        missingToken: "Falta el token de captura. Recarga la página.",
+        downloadExtension: "Descargar extensión de captura",
+        installInstructions: "Cómo instalar",
+        hideInstructions: "Ocultar instrucciones",
+        instructionsIntro:
+          "Siga los pasos a continuación para instalar la extensión:",
+        installStep1: "Descargue el archivo ZIP de la extensión.",
+        installStep2:
+          "Extraiga el archivo ZIP en una carpeta de su computadora.",
+        installStep3: "Abra Google Chrome y vaya a chrome://extensions/.",
+        installStep4:
+          "Active el Modo de desarrollador con el interruptor de la esquina superior derecha.",
+        installStep5: 'Haga clic en "Cargar descomprimida".',
+        installStep6:
+          "Seleccione la carpeta extraída que contiene los archivos de la extensión.",
+        installStep7: "La extensión está instalada y lista para usar.",
+        installStep8:
+          "Actualice esta página con F5 e intente conectarse de nuevo."
       },
       contacts: {
         title: "Contactos",
@@ -846,9 +924,26 @@ const messages = {
         backgroundContent: "Contenido de fondo del login",
         backgroundContentHint:
           "Acepta imágenes, archivos SVG y videos MP4 para el fondo de la pantalla de login.",
-        noFileSelected: "Todavía no hay archivo seleccionado."
+        noFileSelected: "Todavía no hay archivo seleccionado.",
+        buildExtension: "Construir extensión WA Session Capture",
+        buildingExtension: "Construyendo extensión…",
+        downloadExtension: "Descargar extensión",
+        extensionHint:
+          "Construye una extensión Chrome personalizada. El ZIP descargado ya contiene los archivos de la extensión: extraiga y cargue la carpeta extraída como extensión desempaquetada.",
+        extensionBuildStarted:
+          "Construcción de la extensión iniciada. Se le notificará cuando esté lista.",
+        extensionBuildFailed:
+          "No se pudo iniciar la construcción de la extensión.",
+        extensionBuilt: "Extensión construida con éxito.",
+        extensionBuildUnknownError: "Error de construcción desconocido."
       },
       settings: {
+        restartBackend: {
+          button: "Reiniciar Backend",
+          restarting: "Reiniciando…",
+          success: "Reinicio del backend iniciado.",
+          error: "Error al reiniciar el backend."
+        },
         group: {
           general: "General",
           timeouts: "Tiempos de espera",
@@ -952,6 +1047,13 @@ const messages = {
             disabled: "Desactivado"
           }
         },
+        MultiThreadedWbot: {
+          title: "Worker Multihilo de WhatsApp",
+          options: {
+            enabled: "Activado",
+            disabled: "Desactivado"
+          }
+        },
         FileUploadLimit: {
           title: "Límite de carga de archivos (MB)"
         },
@@ -1035,6 +1137,66 @@ const messages = {
             contact: "Contacto",
             both: "Ticket y contacto"
           }
+        },
+        docker: {
+          title: "Contenedores Docker",
+          description:
+            "Gestione los contenedores del servidor: verifique actualizaciones de imagen, pull+reinicie o reinicie.",
+          selfBadge: "este backend",
+          notChecked: "No verificado",
+          updateAvailable: "Actualización disponible",
+          upToDate: "Actualizado",
+          unavailable: "No disponible",
+          unavailableMessage:
+            "Servicio Docker no disponible en este servidor. Verifique si el socket de Docker está montado en el contenedor del backend.",
+          columns: {
+            name: "Nombre",
+            image: "Imagen",
+            state: "Estado",
+            created: "Creado el",
+            update: "Actualización",
+            actions: "Acciones"
+          },
+          actions: {
+            refreshList: "Actualizar lista",
+            checkUpdates: "Verificar actualizaciones",
+            checkUpdate: "Verificar actualización",
+            updateBackendFrontend: "Actualizar backend y frontend",
+            updatingBackendFrontend: "Actualizando backend y frontend...",
+            update: "Pull + reiniciar",
+            restart: "Reiniciar"
+          },
+          toasts: {
+            updateAvailable: "Actualización disponible para {{name}}",
+            selfUpdate:
+              "El backend se está actualizando y se reiniciará. Espere unos instantes y recargue la página.",
+            selfRestart:
+              "El backend se está reiniciando. Espere unos instantes y recargue la página.",
+            restarted: "{{name}} reiniciado",
+            noUpdates: "No hay actualizaciones disponibles."
+          },
+          confirm: {
+            updateTitle: "Actualizar {{name}}",
+            updateAllTitle: "Actualizar backend y frontend",
+            updateAllBody:
+              "Los contenedores de backend y frontend se actualizarán (pull + recreación). El contenedor del backend se reiniciará y la aplicación estará no disponible por unos instantes. ¿Desea continuar?",
+            restartTitle: "Reiniciar {{name}}",
+            updateBody:
+              'Se hará el pull de la imagen "{{image}}" y el contenedor se recreará con la nueva versión. ¿Desea continuar?',
+            restartBody:
+              'El contenedor "{{name}}" se reiniciará. ¿Desea continuar?',
+            selfWarning:
+              "Este es el contenedor del backend: la aplicación estará no disponible por unos instantes."
+          },
+          dashboardBanner: {
+            title: "Actualizaciones de contenedores disponibles",
+            description:
+              "Hay actualizaciones de imagen de backend y/o frontend disponibles.",
+            updateAll: "Actualizar backend y frontend",
+            updating: "Actualizando...",
+            confirmBody:
+              "Los contenedores de backend y frontend se actualizarán (pull + recreación). El contenedor del backend se reiniciará y la aplicación estará no disponible durante aproximadamente 1 minuto. ¿Desea continuar?"
+          }
         }
       },
       messagesList: {
@@ -1048,7 +1210,8 @@ const messages = {
             call: "Llamar",
             endCall: "Cortar"
           }
-        }
+        },
+        openPaymentLink: "Abrir enlace de pago"
       },
       messagesInput: {
         placeholderOpen: "Ingrese un mensaje",
@@ -1162,6 +1325,8 @@ const messages = {
           "El backend se está iniciando y aún no está listo. Reintentando automáticamente."
       },
       backendErrors: {
+        ERR_INTERNAL:
+          "Error interno del servidor. Por favor, contacte con soporte.",
         ERR_FORBIDDEN: "No tienes permisos para acceder a este recurso.",
         ERR_CHECK_NUMBER: "No se pudo verificar el número de WhatsApp.",
         ERR_NO_OTHER_WHATSAPP:

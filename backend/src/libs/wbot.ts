@@ -1,5 +1,5 @@
 import * as Sentry from "@sentry/node";
-import makeWASocket, {
+import makeWASocketSingleProcess, {
   WASocket,
   DisconnectReason,
   isJidBroadcast,
@@ -10,6 +10,7 @@ import makeWASocket, {
   jidNormalizedUser,
   BinaryNode
 } from "libzapitu-rf";
+import makeWASocketMultiThreaded from "libzapitu-rf/worker";
 
 import { Boom } from "@hapi/boom";
 // import MAIN_LOGGER from "@whiskeysockets/baileys/lib/Utils/logger";
@@ -40,9 +41,34 @@ import GetTicketWbot from "../helpers/GetTicketWbot";
 import { getJidOf } from "../services/WbotServices/getJidOf";
 import WhatsappLidMap from "../models/WhatsappLidMap";
 import { reach } from "yup";
+import crypto from "crypto";
+import { GetCompanySetting } from "../helpers/CheckSettings";
 
 // const loggerBaileys = MAIN_LOGGER.child({});
 // loggerBaileys.level = process.env.BAILEYS_LOG_LEVEL || "error";
+
+const passkeyTokens = new Map<number, string>();
+
+export function setPasskeyToken(whatsappId: number, token: string): void {
+  passkeyTokens.set(whatsappId, token);
+}
+
+export function getPasskeyToken(whatsappId: number): string | undefined {
+  return passkeyTokens.get(whatsappId);
+}
+
+export function resolvePasskeyToken(token: string): number | undefined {
+  for (const [id, t] of passkeyTokens.entries()) {
+    if (t === token) return id;
+  }
+  return undefined;
+}
+
+export function createCaptureToken(whatsappId: number): string {
+  const token = crypto.randomBytes(24).toString("hex");
+  passkeyTokens.set(whatsappId, token);
+  return token;
+}
 
 export type Session = WASocket & {
   id?: number;
@@ -98,6 +124,24 @@ export const removeWbot = async (
       where: { whatsappId }
     });
   }
+};
+
+/**
+ * Closes every active WhatsApp session without logging out, so credentials
+ * are preserved and sessions can be resumed after a restart. Used during
+ * graceful shutdown.
+ */
+export const closeAllSessions = async (): Promise<void> => {
+  const ids = sessions.map(s => s.id).filter((id): id is number => !!id);
+
+  if (ids.length === 0) {
+    logger.info("No active WhatsApp sessions to close.");
+    return;
+  }
+
+  logger.info(`Closing ${ids.length} WhatsApp session(s)...`);
+  await Promise.allSettled(ids.map(id => removeWbot(id, false)));
+  logger.info("All WhatsApp sessions closed.");
 };
 
 function getGreaterVersion(a, b) {
@@ -306,6 +350,16 @@ export const initWASocket = async (
           hostName ? ` - ${hostName}` : ""
         }`;
 
+        let makeWASocket: typeof makeWASocketSingleProcess;
+        if (
+          (await GetCompanySetting(1, "useMultiThreadedWbot", "disabled")) ===
+          "enabled"
+        ) {
+          makeWASocket = makeWASocketMultiThreaded;
+        } else {
+          makeWASocket = makeWASocketSingleProcess;
+        }
+
         wsocket = makeWASocket({
           logger: loggerBaileys,
           printQRInTerminal: false,
@@ -430,9 +484,8 @@ export const initWASocket = async (
                 handleReachoutTimelock(timelock, { timelock });
               });
 
-              // @ts-ignore — libzapitu-rf adds these methods at runtime; type defs may lag.
-              wsocket.fetchNewChatMessageCap().then((cap: any) => {
-                logger.debug({ cap }, "Fetched new chat message cap");
+              wsocket.fetchNewChatMessageCap().then(cap => {
+                logger.info({ cap }, "Fetched new chat message cap");
               });
 
               await whatsapp.reload({
@@ -478,9 +531,11 @@ export const initWASocket = async (
                   sessions.push(wsocket);
                 }
 
-                const anotherSameJid = sessions.find(
-                  s => s.id !== whatsapp.id && s.myJid === wsocket.myJid
-                );
+                const anotherSameJid =
+                  !!wsocket.myJid &&
+                  sessions.find(
+                    s => s.id !== whatsapp.id && s.myJid === wsocket.myJid
+                  );
 
                 if (anotherSameJid) {
                   logger.warn(
@@ -566,6 +621,31 @@ export const initWASocket = async (
           }
         );
         wsocket.ev.on("creds.update", saveState);
+
+        wsocket.ev.on("pair.passkey.request", async () => {
+          logger.info(`Session ${name} requires passkey authentication`);
+          const token = createCaptureToken(whatsapp.id);
+
+          await whatsapp.update({
+            status: "passkey_required",
+            qrcode: token,
+            retries: 0
+          });
+
+          io.to(`company-${whatsapp.companyId}-admin`).emit(
+            `company-${whatsapp.companyId}-whatsappSession`,
+            {
+              action: "update",
+              session: whatsapp
+            }
+          );
+
+          // Close the socket so the ongoing QR-code loop does not overwrite the
+          // capture token that is now stored in the qrcode field. The capture
+          // endpoint will restart the session once the extension posts the dump.
+          wsocket.ev.removeAllListeners("connection.update");
+          wsocket.end(null);
+        });
 
         wsocket.ev.on(
           "presence.update",

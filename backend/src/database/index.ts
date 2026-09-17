@@ -44,10 +44,15 @@ import Wavoip from "../models/Wavoip";
 import BulkCampaign from "../models/BulkCampaign";
 import BulkMessage from "../models/BulkMessage";
 
-// eslint-disable-next-line @typescript-eslint/no-var-requires
 const dbConfig = require("../config/database");
 
 const sequelize = new Sequelize(dbConfig);
+
+// Diagnostic: logs pool wait time and query execution time. Instrumentation
+// is cheap and always on; logging is at debug/trace level (silent by default)
+// except for warn-level threshold breaches.
+import { initPoolMonitor } from "./poolMonitor";
+initPoolMonitor(sequelize);
 
 const models = [
   Company,

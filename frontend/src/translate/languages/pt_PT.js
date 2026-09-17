@@ -53,6 +53,7 @@ const messages = {
           invalidEmail: "Email inválido",
           invalidPhone: "Número de telefone inválido"
         },
+        status: "Estado",
         serverTime: "Hora do servidor:",
         clientTime: "Hora do cliente:",
         differenceMinutes: "Diferença: {{count}} minuto(s)"
@@ -92,6 +93,40 @@ const messages = {
           token: "Token",
           submit: "Registar",
           success: "Empresa criada com sucesso!"
+        }
+      },
+      companiesManager: {
+        form: {
+          campaigns: "Campanhas",
+          recurrence: "Recorrência",
+          monthly: "Mensal",
+          bimonthly: "Bimestral",
+          quarterly: "Trimestral",
+          semiannual: "Semestral",
+          annual: "Anual"
+        },
+        buttons: {
+          clear: "Limpar",
+          accessAs: "Aceder como",
+          incrementDueDate: "+ Vencimento",
+          user: "Utilizador"
+        },
+        table: {
+          campaigns: "Campanhas",
+          createdAt: "Criada Em"
+        },
+        toasts: {
+          loadError: "Não foi possível carregar a lista de registos",
+          operationSuccess: "Operação realizada com sucesso",
+          operationError: "Não foi possível realizar a operação",
+          operationErrorDuplicate:
+            "Não foi possível realizar a operação. Verifique se já existe uma empresa com o mesmo nome ou se os campos foram preenchidos corretamente"
+        },
+        confirmationModal: {
+          deleteTitle: "Eliminação de Registo",
+          deleteMessage: "Deseja realmente eliminar este registo?",
+          impersonateTitle: "Aceder como",
+          impersonateMessage: "Deseja aceder ao sistema como esta empresa?"
         }
       },
       auth: {
@@ -156,7 +191,13 @@ const messages = {
             title: "A conexão com o telemóvel foi perdida",
             content:
               "Certifique-se de que o seu telemóvel está conectado à internet e o WhatsApp está aberto, ou clique no botão 'Desconectar' para obter um novo QR Code"
-          }
+          },
+          passkey: {
+            title: "Autenticação por passkey necessária",
+            content:
+              "Clique no botão de passkey e utilize a extensão do navegador para capturar a sessão autenticada do WhatsApp Web."
+          },
+          resetPasskey: "Reiniciar sessão passkey"
         },
         table: {
           name: "Nome",
@@ -187,7 +228,42 @@ const messages = {
         success: "WhatsApp salvo com sucesso."
       },
       qrCode: {
-        message: "Leia o QrCode para iniciar a sessão"
+        message: "Leia o QrCode para iniciar a sessão",
+        extensionHint: "Autenticar pelo WhatsApp Web",
+        startCapture: "Capturar sessão do WhatsApp Web",
+        installExtension: "Instalar Extensão de Captura"
+      },
+      passkeyModal: {
+        title: "Extensão de Captura do WhatsApp Web",
+        instructions:
+          "Utilize a extensão do navegador para capturar a sessão autenticada do WhatsApp Web e enviá-la ao servidor.",
+        connectorNotFound:
+          "Extensão não detetada. Instale a extensão de captura passkey e recarregue a página.",
+        connectorReady:
+          "Extensão detetada. Clique abaixo para se autenticar pelo WhatsApp Web.",
+        startCapture: "Iniciar Captura",
+        waitingForCapture: "A aguardar a captura da sessão do WhatsApp Web…",
+        existingSession: "O WhatsApp Web já tem uma sessão para {{number}}.",
+        captureExisting: "Capturar esta sessão",
+        clearAndContinue: "Limpar sessão local e continuar",
+        importSent: "Sessão capturada e enviada com sucesso.",
+        importError: "Falha na captura: {{reason}}.",
+        missingToken: "Token de captura em falta. Recarregue a página.",
+        downloadExtension: "Transferir extensão de captura",
+        installInstructions: "Como instalar",
+        hideInstructions: "Ocultar instruções",
+        instructionsIntro: "Siga os passos abaixo para instalar a extensão:",
+        installStep1: "Transfira o ficheiro ZIP da extensão.",
+        installStep2:
+          "Descompacte o ficheiro ZIP para uma pasta no seu computador.",
+        installStep3: "Abra o Google Chrome e aceda a chrome://extensions/.",
+        installStep4:
+          "Ative o Modo de programador com o botão no canto superior direito.",
+        installStep5: 'Clique em "Carregar expandida".',
+        installStep6:
+          "Selecione a pasta extraída que contém os ficheiros da extensão.",
+        installStep7: "A extensão está instalada e pronta a usar.",
+        installStep8: "Recarregue esta página com F5 e tente ligar novamente."
       },
       contacts: {
         title: "Contactos",
@@ -817,9 +893,26 @@ const messages = {
         backgroundContent: "Conteúdo de fundo do login",
         backgroundContentHint:
           "Aceita imagens, ficheiros SVG e vídeos MP4 para o fundo do ecrã de login.",
-        noFileSelected: "Ainda não foi selecionado nenhum ficheiro."
+        noFileSelected: "Ainda não foi selecionado nenhum ficheiro.",
+        buildExtension: "Construir extensão WA Session Capture",
+        buildingExtension: "A construir extensão…",
+        downloadExtension: "Transferir extensão",
+        extensionHint:
+          "Constrói uma extensão Chrome personalizada. O ZIP transferido já contém os ficheiros da extensão: extraia e carregue a pasta extraída como extensão descompactada.",
+        extensionBuildStarted:
+          "Construção da extensão iniciada. Será notificado quando estiver pronta.",
+        extensionBuildFailed:
+          "Não foi possível iniciar a construção da extensão.",
+        extensionBuilt: "Extensão construída com sucesso.",
+        extensionBuildUnknownError: "Erro desconhecido na construção."
       },
       settings: {
+        restartBackend: {
+          button: "Reiniciar Backend",
+          restarting: "Reiniciando…",
+          success: "Reinicialização do backend iniciada.",
+          error: "Falha ao reiniciar o backend."
+        },
         group: {
           general: "Geral",
           timeouts: "Tempos de espera",
@@ -918,6 +1011,13 @@ const messages = {
             disabled: "Desativado"
           }
         },
+        MultiThreadedWbot: {
+          title: "Worker Multithread do WhatsApp",
+          options: {
+            enabled: "Ativado",
+            disabled: "Desativado"
+          }
+        },
         FileDownloadLimit: {
           title: "Limite de Download de ficheiros (MB)"
         },
@@ -974,6 +1074,66 @@ const messages = {
         },
         PaymentGateways: {
           title: "Gateways de pagamento"
+        },
+        docker: {
+          title: "Contentores Docker",
+          description:
+            "Gira os contentores do servidor: verifique atualizações de imagem, faça pull+reinicie ou reinicie.",
+          selfBadge: "este backend",
+          notChecked: "Não verificado",
+          updateAvailable: "Atualização disponível",
+          upToDate: "Atualizado",
+          unavailable: "Indisponível",
+          unavailableMessage:
+            "Serviço Docker indisponível neste servidor. Verifique se o socket do Docker está montado no contentor do backend.",
+          columns: {
+            name: "Nome",
+            image: "Imagem",
+            state: "Estado",
+            created: "Criado em",
+            update: "Atualização",
+            actions: "Ações"
+          },
+          actions: {
+            refreshList: "Atualizar lista",
+            checkUpdates: "Verificar atualizações",
+            checkUpdate: "Verificar atualização",
+            updateBackendFrontend: "Atualizar backend e frontend",
+            updatingBackendFrontend: "A atualizar backend e frontend...",
+            update: "Pull + reiniciar",
+            restart: "Reiniciar"
+          },
+          toasts: {
+            updateAvailable: "Atualização disponível para {{name}}",
+            selfUpdate:
+              "O backend está a ser atualizado e será reiniciado. Aguarde alguns instantes e recarregue a página.",
+            selfRestart:
+              "O backend está a reiniciar. Aguarde alguns instantes e recarregue a página.",
+            restarted: "{{name}} reiniciado",
+            noUpdates: "Nenhuma atualização disponível."
+          },
+          confirm: {
+            updateTitle: "Atualizar {{name}}",
+            updateAllTitle: "Atualizar backend e frontend",
+            updateAllBody:
+              "Os contentores do backend e frontend serão atualizados (pull + recriação). O contentor do backend será reiniciado e a aplicação ficará indisponível por alguns instantes. Deseja continuar?",
+            restartTitle: "Reiniciar {{name}}",
+            updateBody:
+              'Será feito o pull da imagem "{{image}}" e o contentor será recriado com a nova versão. Deseja continuar?',
+            restartBody:
+              'O contentor "{{name}}" será reiniciado. Deseja continuar?',
+            selfWarning:
+              "Este é o contentor do backend: a aplicação ficará indisponível por alguns instantes."
+          },
+          dashboardBanner: {
+            title: "Atualizações de contentores disponíveis",
+            description:
+              "Atualizações de imagem do backend e/ou frontend estão disponíveis.",
+            updateAll: "Atualizar backend e frontend",
+            updating: "A atualizar...",
+            confirmBody:
+              "Os contentores do backend e frontend serão atualizados (pull + recriação). O contentor do backend será reiniciado e a aplicação ficará indisponível por cerca de 1 minuto. Deseja continuar?"
+          }
         }
       },
       messagesList: {
@@ -986,7 +1146,8 @@ const messages = {
             accept: "Aceitar",
             call: "Chamar"
           }
-        }
+        },
+        openPaymentLink: "Abrir link de pagamento"
       },
       messagesInput: {
         placeholderOpen: "Digite uma mensagem",
@@ -1097,6 +1258,8 @@ const messages = {
           "O backend está a iniciar e ainda não está pronto. A tentar novamente automaticamente."
       },
       backendErrors: {
+        ERR_INTERNAL:
+          "Erro interno do servidor. Por favor, contacte o suporte.",
         ERR_UNAUTHORIZED: "Não autorizado. Por favor, faça o login novamente.",
         ERR_FORBIDDEN:
           "Acesso negado. Você não tem permissão para acessar este recurso.",

@@ -26,10 +26,14 @@ import formatBody, { mustacheFormat } from "./helpers/Mustache";
 import Setting from "./models/Setting";
 import { parseToMilliseconds } from "./helpers/parseToMilliseconds";
 import { startCampaignQueues } from "./queues/campaign";
+import { clearRepeatableJobsFromQueues } from "./queues/repeatableJobs";
 import OutOfTicketMessage from "./models/OutOfTicketMessages";
 import { getJidOf } from "./services/WbotServices/getJidOf";
 import { _t } from "./services/TranslationServices/i18nService";
 import { makeRandomId } from "./helpers/MakeRandomId";
+import { flushPoolMonitor } from "./database/poolMonitor";
+import CheckAllContainersUpdateService from "./services/DockerServices/CheckAllContainersUpdateService";
+import { cacheLayer } from "./libs/cache";
 
 const connection = process.env.REDIS_URI || "";
 const limiterMax = process.env.REDIS_OPT_LIMITER_MAX || 1;
@@ -90,7 +94,7 @@ async function handleVerifySchedules() {
         sendScheduledMessages.add(
           "SendMessage",
           { schedule },
-          { delay: 40000 }
+          { delay: 40000, removeOnComplete: true, removeOnFail: 100 }
         );
         logger.info(`Delivery scheduled for: ${schedule.contact.name}`);
       });
@@ -330,7 +334,7 @@ async function handleNoQueueTimeout(
       "handleNoQueueTimeout -> UpdateTicketService"
     );
     const userId = status === "pending" ? null : ticket.userId;
-    // eslint-disable-next-line no-await-in-loop
+
     await UpdateTicketService({
       ticketId: ticket.id,
       ticketData: { status, userId, queueId },
@@ -424,7 +428,7 @@ async function handleChatbotTicketTimeout(
       { ...ticketData },
       "handleChatbotTicketTimeout -> UpdateTicketService"
     );
-    // eslint-disable-next-line no-await-in-loop
+
     await UpdateTicketService({
       ticketId: ticket.id,
       ticketData,
@@ -467,7 +471,6 @@ async function handleOpenTicketTimeout(
 
   // eslint-disable-next-line no-restricted-syntax
   for (const ticket of tickets) {
-    // eslint-disable-next-line no-await-in-loop
     await UpdateTicketService({
       ticketId: ticket.id,
       ticketData: {
@@ -488,15 +491,13 @@ async function handleTicketTimeouts() {
   for (const company of companies) {
     logger.trace({ companyId: company?.id }, "handleTicketTimeouts -> company");
     const noQueueTimeout = Number(
-      // eslint-disable-next-line no-await-in-loop
       await GetCompanySetting(company.id, "noQueueTimeout", "0")
     );
     if (noQueueTimeout) {
       const noQueueTimeoutAction = Number(
-        // eslint-disable-next-line no-await-in-loop
         await GetCompanySetting(company.id, "noQueueTimeoutAction", "0")
       );
-      // eslint-disable-next-line no-await-in-loop
+
       await handleNoQueueTimeout(
         company,
         noQueueTimeout,
@@ -504,17 +505,15 @@ async function handleTicketTimeouts() {
       );
     }
     const openTicketTimeout = Number(
-      // eslint-disable-next-line no-await-in-loop
       await GetCompanySetting(company.id, "openTicketTimeout", "0")
     );
     if (openTicketTimeout) {
-      // eslint-disable-next-line no-await-in-loop
       const openTicketTimeoutAction = await GetCompanySetting(
         company.id,
         "openTicketTimeoutAction",
         "pending"
       );
-      // eslint-disable-next-line no-await-in-loop
+
       await handleOpenTicketTimeout(
         company,
         openTicketTimeout,
@@ -522,16 +521,14 @@ async function handleTicketTimeouts() {
       );
     }
     const chatbotTicketTimeout = Number(
-      // eslint-disable-next-line no-await-in-loop
       await GetCompanySetting(company.id, "chatbotTicketTimeout", "0")
     );
     if (chatbotTicketTimeout) {
       const chatbotTicketTimeoutAction =
         Number(
-          // eslint-disable-next-line no-await-in-loop
           await GetCompanySetting(company.id, "chatbotTicketTimeoutAction", "0")
         ) || 0;
-      // eslint-disable-next-line no-await-in-loop
+
       await handleChatbotTicketTimeout(
         company,
         chatbotTicketTimeout,
@@ -556,6 +553,9 @@ async function handleEveryMinute(job: Job) {
   const executionId = makeRandomId(10);
   logger.trace(`handleEveryMinute: entering - executionId: ${executionId}`);
   try {
+    // Emit the pool monitor's per-minute summaries.
+    flushPoolMonitor();
+
     await handleRatingsTimeout();
     await handleTicketTimeouts();
     logger.trace(`handleEveryMinute: exiting - executionId: ${executionId}`);
@@ -609,8 +609,37 @@ const createInvoices = new CronJob("0 * * * * *", async () => {
 
 createInvoices.start();
 
+const DOCKER_UPDATES_CACHE_KEY = "docker:updates:daily-check";
+const DOCKER_UPDATES_CACHE_TTL_SECONDS = 60 * 60 * 24; // 24 hours
+
+async function runDailyDockerUpdatesCheck() {
+  try {
+    const result = await CheckAllContainersUpdateService();
+    await cacheLayer.set(
+      DOCKER_UPDATES_CACHE_KEY,
+      JSON.stringify(result),
+      "EX",
+      DOCKER_UPDATES_CACHE_TTL_SECONDS
+    );
+    logger.info({ result }, "Daily Docker update check completed");
+  } catch (e) {
+    logger.error({ message: e?.message }, "Daily Docker update check failed");
+  }
+}
+
+const dailyDockerUpdatesCheckJob = new CronJob(
+  "0 6 * * *",
+  runDailyDockerUpdatesCheck
+);
+dailyDockerUpdatesCheckJob.start();
+
 export async function startQueueProcess() {
   logger.info("Starting queue processing");
+
+  await clearRepeatableJobsFromQueues([
+    { name: "UserMonitor", queue: userMonitor },
+    { name: "ScheduleMonitor", queue: scheduleMonitor }
+  ]);
 
   startCampaignQueues().then(() => {
     logger.info("Campaign processing functions started");
@@ -629,7 +658,8 @@ export async function startQueueProcess() {
     {},
     {
       repeat: { cron: "*/5 * * * * *" },
-      removeOnComplete: true
+      removeOnComplete: true,
+      removeOnFail: 100
     }
   );
 
@@ -638,7 +668,25 @@ export async function startQueueProcess() {
     {},
     {
       repeat: { cron: "* * * * *" },
-      removeOnComplete: true
+      removeOnComplete: true,
+      removeOnFail: 100
     }
   );
+}
+
+/**
+ * Gracefully closes all Bull queues so in-flight jobs can finish before the
+ * process exits. Used during graceful shutdown.
+ */
+export async function closeAllQueues(): Promise<void> {
+  const queues = [
+    userMonitor,
+    messageQueue,
+    scheduleMonitor,
+    sendScheduledMessages
+  ];
+
+  logger.info(`Closing ${queues.length} queue(s)...`);
+  await Promise.allSettled(queues.map(queue => queue.close()));
+  logger.info("All queues closed.");
 }

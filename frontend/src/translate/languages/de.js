@@ -20,6 +20,7 @@ const messages = {
         connection: "Verbindung",
         queue: "Warteschlange",
         contact: "Kontakt",
+        status: "Status",
         serverTime: "Serverzeit:",
         clientTime: "Clientzeit:",
         differenceMinutes: "Unterschied: {{count}} Minute(n)"
@@ -59,6 +60,41 @@ const messages = {
           token: "Token",
           submit: "Registrieren",
           success: "Unternehmen erfolgreich erstellt!"
+        }
+      },
+      companiesManager: {
+        form: {
+          campaigns: "Kampagnen",
+          recurrence: "Wiederkehrend",
+          monthly: "Monatlich",
+          bimonthly: "Zweimonatlich",
+          quarterly: "Vierteljaehrlich",
+          semiannual: "Halbjaehrlich",
+          annual: "Jaehrlich"
+        },
+        buttons: {
+          clear: "Leeren",
+          accessAs: "Zugreifen als",
+          incrementDueDate: "+ Faelligkeitsdatum",
+          user: "Benutzer"
+        },
+        table: {
+          campaigns: "Kampagnen",
+          createdAt: "Erstellt am"
+        },
+        toasts: {
+          loadError: "Datensatzliste konnte nicht geladen werden",
+          operationSuccess: "Operation erfolgreich durchgefuehrt",
+          operationError: "Operation konnte nicht durchgefuehrt werden",
+          operationErrorDuplicate:
+            "Operation konnte nicht durchgefuehrt werden. Ueberpruefen Sie, ob bereits ein Unternehmen mit demselben Namen existiert oder ob die Felder korrekt ausgefuellt wurden"
+        },
+        confirmationModal: {
+          deleteTitle: "Datensatz loeschen",
+          deleteMessage: "Moechten Sie diesen Datensatz wirklich loeschen?",
+          impersonateTitle: "Zugreifen als",
+          impersonateMessage:
+            "Moechten Sie das System als dieses Unternehmen aufrufen?"
         }
       },
       auth: {
@@ -124,7 +160,13 @@ const messages = {
             title: "Verbindung zum Telefon verloren",
             content:
               "Stellen Sie sicher, dass Ihr Telefon mit dem Internet verbunden ist und WhatsApp geöffnet ist, oder klicken Sie auf die Schaltfläche 'Trennen', um einen neuen QR-Code zu erhalten"
-          }
+          },
+          passkey: {
+            title: "Passkey authentication required",
+            content:
+              "Click the passkey button and use the browser extension to capture the authenticated WhatsApp Web session."
+          },
+          resetPasskey: "Passkey-Sitzung zurücksetzen"
         },
         table: {
           name: "Name",
@@ -155,7 +197,47 @@ const messages = {
         success: "WhatsApp erfolgreich gespeichert."
       },
       qrCode: {
-        message: "Scannen Sie den QR-Code, um die Sitzung zu starten"
+        message: "Scannen Sie den QR-Code, um die Sitzung zu starten",
+        extensionHint: "Über WhatsApp Web authentifizieren",
+        startCapture: "WhatsApp Web-Sitzung erfassen",
+        installExtension: "Capture-Erweiterung installieren"
+      },
+      passkeyModal: {
+        title: "WhatsApp Web Capture-Erweiterung",
+        instructions:
+          "Use the browser extension to capture the authenticated WhatsApp Web session and send it to the server.",
+        connectorNotFound:
+          "Extension not detected. Install the passkey capture extension and reload the page.",
+        connectorReady:
+          "Erweiterung erkannt. Klicken Sie unten, um sich über WhatsApp Web zu authentifizieren.",
+        startCapture: "Start Capture",
+        waitingForCapture: "Waiting for WhatsApp Web session capture…",
+        existingSession: "WhatsApp Web already has a session for {{number}}.",
+        captureExisting: "Capture this session",
+        clearAndContinue: "Clear local session and continue",
+        importSent: "Session captured and sent successfully.",
+        importError: "Capture failed: {{reason}}.",
+        missingToken: "Capture token is missing. Please reload the page.",
+        downloadExtension: "Capture-Erweiterung herunterladen",
+        installInstructions: "Installation",
+        hideInstructions: "Anleitung ausblenden",
+        instructionsIntro:
+          "Folgen Sie den unten stehenden Schritten, um die Erweiterung zu " +
+          "installieren:",
+        installStep1: "Laden Sie die ZIP-Datei der Erweiterung herunter.",
+        installStep2:
+          "Entpacken Sie die ZIP-Datei in einen Ordner auf Ihrem Computer.",
+        installStep3:
+          "Öffnen Sie Google Chrome und rufen Sie chrome://extensions/ auf.",
+        installStep4:
+          "Aktivieren Sie den Entwicklermodus über den Schalter oben rechts.",
+        installStep5: 'Klicken Sie auf "Entpackte Erweiterung laden".',
+        installStep6:
+          "Wählen Sie den entpackten Ordner mit den Erweiterungsdateien aus.",
+        installStep7:
+          "Die Erweiterung ist jetzt installiert und einsatzbereit.",
+        installStep8:
+          "Aktualisieren Sie diese Seite mit F5 und versuchen Sie erneut zu verbinden."
       },
       contacts: {
         title: "Kontakte",
@@ -776,9 +858,26 @@ const messages = {
         backgroundContent: "Login-Hintergrundinhalt",
         backgroundContentHint:
           "Unterstützt Bilder, SVG-Dateien und MP4-Videos für den Hintergrund des Login-Bildschirms.",
-        noFileSelected: "Noch keine Datei ausgewählt."
+        noFileSelected: "Noch keine Datei ausgewählt.",
+        buildExtension: "WA Session Capture-Erweiterung erstellen",
+        buildingExtension: "Erweiterung wird erstellt…",
+        downloadExtension: "Erweiterung herunterladen",
+        extensionHint:
+          "Erstellt eine whitelabel Chrome-Erweiterung. Die heruntergeladene ZIP enthält bereits die Erweiterungsdateien: Entpacken Sie sie und laden Sie den entpackten Ordner als entpackte Erweiterung.",
+        extensionBuildStarted:
+          "Erweiterungs-Build gestartet. Sie werden benachrichtigt, sobald er fertig ist.",
+        extensionBuildFailed:
+          "Der Erweiterungs-Build konnte nicht gestartet werden.",
+        extensionBuilt: "Erweiterung erfolgreich erstellt.",
+        extensionBuildUnknownError: "Unbekannter Build-Fehler."
       },
       settings: {
+        restartBackend: {
+          button: "Backend neu starten",
+          restarting: "Neustart…",
+          success: "Backend-Neustart eingeleitet.",
+          error: "Fehler beim Neustart des Backends."
+        },
         group: {
           general: "Allgemein",
           timeouts: "Zeitüberschreitungen",
@@ -877,6 +976,13 @@ const messages = {
             disabled: "Deaktiviert"
           }
         },
+        MultiThreadedWbot: {
+          title: "Multithreaded WhatsApp Worker",
+          options: {
+            enabled: "Aktiviert",
+            disabled: "Deaktiviert"
+          }
+        },
         FileDownloadLimit: {
           title: "Dateidownload-Limit (MB)"
         },
@@ -920,6 +1026,67 @@ const messages = {
         },
         PaymentGateways: {
           title: "Zahlungsgateways"
+        },
+        docker: {
+          title: "Docker-Container",
+          description:
+            "Verwalten Sie die Server-Container: Bild-Updates prüfen, Pull+Neustart oder Neustart.",
+          selfBadge: "dieses Backend",
+          notChecked: "Nicht geprüft",
+          updateAvailable: "Update verfügbar",
+          upToDate: "Aktuell",
+          unavailable: "Nicht verfügbar",
+          unavailableMessage:
+            "Docker-Dienst auf diesem Server nicht verfügbar. Prüfen Sie, ob der Docker-Socket im Backend-Container gemountet ist.",
+          columns: {
+            name: "Name",
+            image: "Image",
+            state: "Status",
+            created: "Erstellt",
+            update: "Update",
+            actions: "Aktionen"
+          },
+          actions: {
+            refreshList: "Liste aktualisieren",
+            checkUpdates: "Updates prüfen",
+            checkUpdate: "Update prüfen",
+            updateBackendFrontend: "Backend & Frontend aktualisieren",
+            updatingBackendFrontend:
+              "Backend & Frontend werden aktualisiert...",
+            update: "Pull + Neustart",
+            restart: "Neustart"
+          },
+          toasts: {
+            updateAvailable: "Update für {{name}} verfügbar",
+            selfUpdate:
+              "Das Backend wird aktualisiert und neu gestartet. Warten Sie einen Moment und laden Sie die Seite neu.",
+            selfRestart:
+              "Das Backend wird neu gestartet. Warten Sie einen Moment und laden Sie die Seite neu.",
+            restarted: "{{name}} neu gestartet",
+            noUpdates: "Keine Updates verfügbar."
+          },
+          confirm: {
+            updateTitle: "{{name}} aktualisieren",
+            updateAllTitle: "Backend & Frontend aktualisieren",
+            updateAllBody:
+              "Die Backend- und Frontend-Container werden aktualisiert (Pull + Neuerstellung). Der Backend-Container wird neu gestartet und die Anwendung ist für einige Momente nicht verfügbar. Möchten Sie fortfahren?",
+            restartTitle: "{{name}} neu starten",
+            updateBody:
+              'Das Image "{{image}}" wird gepullt und der Container mit der neuen Version neu erstellt. Möchten Sie fortfahren?',
+            restartBody:
+              'Der Container "{{name}}" wird neu gestartet. Möchten Sie fortfahren?',
+            selfWarning:
+              "Dies ist der Backend-Container: Die Anwendung ist für einige Momente nicht verfügbar."
+          },
+          dashboardBanner: {
+            title: "Container-Updates verfügbar",
+            description:
+              "Backend- und/oder Frontend-Image-Updates sind verfügbar.",
+            updateAll: "Backend & Frontend aktualisieren",
+            updating: "Aktualisieren...",
+            confirmBody:
+              "Die Backend- und Frontend-Container werden aktualisiert (Pull + Neuerstellung). Der Backend-Container wird neu gestartet und die Anwendung ist für etwa 1 Minute nicht verfügbar. Möchten Sie fortfahren?"
+          }
         }
       },
       messagesList: {
@@ -931,7 +1098,8 @@ const messages = {
             reopen: "Wieder öffnen",
             accept: "Akzeptieren"
           }
-        }
+        },
+        openPaymentLink: "Zahlungslink öffnen"
       },
       messagesInput: {
         placeholderOpen: "Nachricht eingeben",
@@ -1041,6 +1209,8 @@ const messages = {
           "Das Backend startet noch und ist noch nicht bereit. Automatischer neuer Versuch."
       },
       backendErrors: {
+        ERR_INTERNAL:
+          "Interner Serverfehler. Bitte kontaktieren Sie den Support.",
         ERR_NO_OTHER_WHATSAPP:
           "Es muss mindestens ein Standard-WhatsApp geben.",
         ERR_NO_DEF_WAPP_FOUND:

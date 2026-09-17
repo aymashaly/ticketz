@@ -171,7 +171,6 @@ const processMention = async (body: string, mention: string) => {
     payload.name = contact.name;
     payload.number = contact.number;
   } else {
-    // eslint-disable-next-line prefer-destructuring
     payload.number = mention.split("@")[0];
   }
 
@@ -231,7 +230,8 @@ export const getBodyMessage = async (msg: proto.IMessage): Promise<string> => {
       audioMessage: "🔊",
       listResponseMessage:
         msg?.listResponseMessage?.singleSelectReply?.selectedRowId,
-      reactionMessage: msg?.reactionMessage?.text || "reaction"
+      reactionMessage: msg?.reactionMessage?.text || "reaction",
+      interactiveMessage: msg?.interactiveMessage?.body?.text || ""
     };
 
     const objKey = Object.keys(types).find(key => key === type);
@@ -250,7 +250,6 @@ export const getBodyMessage = async (msg: proto.IMessage): Promise<string> => {
 
     // eslint-disable-next-line no-restricted-syntax
     for (const mention of (msg[type] as any)?.contextInfo?.mentionedJid ?? []) {
-      // eslint-disable-next-line no-await-in-loop
       body = await processMention(body, mention);
     }
 
@@ -496,7 +495,6 @@ const downloadMedia = async (
 
       sendMsg.message.extendedTextMessage.text = `${autoMessage}: ${limitInstructions}.`;
 
-      // eslint-disable-next-line no-use-before-define
       await verifyMessage(sendMsg, ticket, ticket.contact);
     }
     throw new Error("ERR_FILESIZE_OVER_LIMIT");
@@ -516,11 +514,10 @@ const downloadMedia = async (
         tmpMessage.url = "";
       }
 
-      // eslint-disable-next-line no-await-in-loop
       stream = await downloadContentFromMessage(tmpMessage, messageType);
     } catch (error) {
       contDownload += 1;
-      // eslint-disable-next-line no-await-in-loop, no-loop-func
+
       await new Promise(resolve => {
         setTimeout(resolve, 1000 * contDownload * 2);
       });
@@ -584,13 +581,11 @@ const storeQuotedMessage = async (
 
   let mediaUrl = null;
   if (media) {
-    // eslint-disable-next-line no-use-before-define
     mediaUrl = await saveMediaToFile(media, { destination: ticket });
   }
 
   let thumbnailUrl = null;
   if (thumbnailMedia) {
-    // eslint-disable-next-line no-use-before-define
     thumbnailUrl = await saveMediaToFile(thumbnailMedia, {
       destination: ticket
     });
@@ -1092,6 +1087,7 @@ const isValidMsg = (msg: proto.IWebMessageInfo): boolean => {
       msgType === "listResponseMessage" ||
       msgType === "listMessage" ||
       msgType === "templateMessage" ||
+      msgType === "interactiveMessage" ||
       msgType === "viewOnceMessage" ||
       msgType === "viewOnceMessageV2";
 
@@ -1656,15 +1652,22 @@ const handleMessage = async (
 
     if (isGroup) {
       groupContact = await wbotMutex.runExclusive(async () => {
-        let result = groupContactCache.get(msg.key.remoteJid);
-        if (!result) {
+        // The cache is shared across all WhatsApp sessions/companies in this
+        // process, so the key MUST be scoped by connection (whatsappId).
+        // Otherwise a group contact resolved for one connection could be reused
+        // to create tickets for another connection/company that participates in
+        // the same group. Scoping by whatsappId also keeps connections of the
+        // same company independent when they share group membership.
+        const cacheKey = `${wbot.id}:${msg.key.remoteJid}`;
+        let result = groupContactCache.get(cacheKey);
+        if (!result || result.companyId !== companyId) {
           const groupMetadata = await wbot.groupMetadata(msg.key.remoteJid);
           const msgGroupContact = {
             id: groupMetadata.id,
             name: groupMetadata.subject
           };
           result = await verifyContact(msgGroupContact, wbot, companyId);
-          groupContactCache.set(msg.key.remoteJid, result);
+          groupContactCache.set(cacheKey, result);
         }
         return result;
       });
@@ -2227,7 +2230,9 @@ const verifyRecentCampaign = async (
             campaignId: campaignShipping.campaignId
           },
           {
-            delay: parseToMilliseconds(randomValue(0, 10))
+            delay: parseToMilliseconds(randomValue(0, 10)),
+            removeOnComplete: true,
+            removeOnFail: 100
           }
         );
         return true;
