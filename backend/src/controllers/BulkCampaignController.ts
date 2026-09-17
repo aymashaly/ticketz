@@ -423,6 +423,86 @@ export const stop = async (req: Request, res: Response): Promise<Response> => {
   return res.json({ message: "Campaign stopped successfully" });
 };
 
+// Retry only the messages currently marked FAILED on a completed or cancelled
+// campaign. Resets them back to PENDING, clears their per-message error context,
+// zeroes the campaign's failedCount, and kicks the dispatcher again. SENT /
+// DELIVERED messages are intentionally NOT touched — we never re-dispatch
+// messages that were already accepted by the WhatsApp session.
+export const retryFailed = async (
+  req: Request,
+  res: Response
+): Promise<Response> => {
+  const { id } = req.params;
+  const { companyId } = req.user;
+
+  const campaign = await BulkCampaign.findOne({
+    where: { id, companyId }
+  });
+
+  if (!campaign) {
+    throw new AppError("Campaign not found", 404);
+  }
+
+  if (
+    campaign.status !== "COMPLETED" &&
+    campaign.status !== "CANCELLED"
+  ) {
+    throw new AppError(
+      "Can only retry failed messages on completed or cancelled campaigns",
+      400
+    );
+  }
+
+  const failedMessagesCount = await BulkMessage.count({
+    where: { bulkCampaignId: id, status: "FAILED" }
+  });
+
+  if (failedMessagesCount === 0) {
+    throw new AppError("No failed messages to retry", 400);
+  }
+
+  // Reset failed messages back to PENDING and clear error context so the
+  // upcoming send attempts show a clean state in the UI.
+  await BulkMessage.update(
+    {
+      status: "PENDING",
+      errorMessage: null as any,
+      sentAt: null as any
+    },
+    { where: { bulkCampaignId: id, status: "FAILED" } }
+  );
+
+  // Reset the campaign counters and put it back into a dispatching state.
+  // completedAt is cleared so the UI doesn't keep showing the old completion
+  // time; startedAt is refreshed so the progress bar starts over for this run.
+  await campaign.update({
+    failedCount: 0,
+    status: "RUNNING",
+    startedAt: new Date(),
+    completedAt: null as any
+  });
+
+  // Fire the dispatcher — same path as create / resume, so all the
+  // throttling, polling, error reporting, and socket events behave identically.
+  BulkMessageService.processCampaign(campaign.id);
+
+  const io = getIO();
+  io.to(`company-${companyId}-mainchannel`).emit(
+    `company-${companyId}-bulk-campaign`,
+    {
+      action: "update",
+      campaign
+    }
+  );
+
+  return res.json({
+    message: `Retrying ${failedMessagesCount} failed message${
+      failedMessagesCount === 1 ? "" : "s"
+    }`,
+    retriedCount: failedMessagesCount
+  });
+};
+
 export const getActive = async (
   req: Request,
   res: Response

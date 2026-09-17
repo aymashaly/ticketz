@@ -34,6 +34,7 @@ import DeleteIcon from "@material-ui/icons/Delete";
 import StopIcon from "@material-ui/icons/Stop";
 import PauseIcon from "@material-ui/icons/Pause";
 import PlayArrowIcon from "@material-ui/icons/PlayArrow";
+import ReplayIcon from "@material-ui/icons/Replay";
 import PeopleIcon from "@material-ui/icons/People";
 import ImageIcon from "@material-ui/icons/Image";
 import MessageIcon from "@material-ui/icons/Message";
@@ -421,6 +422,22 @@ const BulkMessaging = () => {
     }
   };
 
+  // Resets every BulkMessage currently marked FAILED on a completed or
+  // cancelled campaign back to PENDING, zeros the failedCount, and re-runs the
+  // dispatcher. SENT/DELIVERED messages are left untouched, so a successful
+  // contact never gets a duplicate send from this action.
+  const handleRetryFailed = async campaignId => {
+    try {
+      const { data } = await api.post(
+        `/bulk-campaigns/${campaignId}/retry-failed`
+      );
+      toast.success(data?.message || "Retrying failed messages");
+      fetchAllCampaigns();
+    } catch (err) {
+      toastError(err);
+    }
+  };
+
   const handleStopCampaign = async campaignId => {
     try {
       await api.post(`/bulk-campaigns/${campaignId}/stop`);
@@ -650,6 +667,20 @@ const BulkMessaging = () => {
                         Stop
                       </Button>
                     )}
+
+                    {(campaign.status === "COMPLETED" ||
+                      campaign.status === "CANCELLED") &&
+                      campaign.failed > 0 && (
+                        <Button
+                          size="small"
+                          color="primary"
+                          variant="outlined"
+                          startIcon={<ReplayIcon />}
+                          onClick={() => handleRetryFailed(campaign.id)}
+                        >
+                          {`Retry ${campaign.failed} failed`}
+                        </Button>
+                      )}
 
                     {(campaign.status === "COMPLETED" ||
                       campaign.status === "CANCELLED") && (

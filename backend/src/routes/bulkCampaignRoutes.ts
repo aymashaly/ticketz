@@ -25,5 +25,10 @@ routes.delete("/bulk-campaigns/:id", isAuth, BulkCampaignController.remove);
 routes.post("/bulk-campaigns/:id/stop", isAuth, BulkCampaignController.stop);
 routes.post("/bulk-campaigns/:id/pause", isAuth, BulkCampaignController.pause);
 routes.post("/bulk-campaigns/:id/resume", isAuth, BulkCampaignController.resume);
+routes.post(
+  "/bulk-campaigns/:id/retry-failed",
+  isAuth,
+  BulkCampaignController.retryFailed
+);
 
 export default routes;
