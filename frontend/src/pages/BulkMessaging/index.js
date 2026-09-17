@@ -670,7 +670,7 @@ const BulkMessaging = () => {
 
                     {(campaign.status === "COMPLETED" ||
                       campaign.status === "CANCELLED") &&
-                      campaign.failed > 0 && (
+                      Number(campaign.failed ?? campaign.failedCount ?? 0) > 0 && (
                         <Button
                           size="small"
                           color="primary"
@@ -678,7 +678,9 @@ const BulkMessaging = () => {
                           startIcon={<ReplayIcon />}
                           onClick={() => handleRetryFailed(campaign.id)}
                         >
-                          {`Retry ${campaign.failed} failed`}
+                          {`Retry ${
+                            Number(campaign.failed ?? campaign.failedCount ?? 0)
+                          } failed`}
                         </Button>
                       )}
 
